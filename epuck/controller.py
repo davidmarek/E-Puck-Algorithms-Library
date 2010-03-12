@@ -90,7 +90,7 @@ class Controller(object):
         # The response should be in format: "e,left_speed,right_speed".
         # Check the response and set the internal representation.
         resp_token = response.split(",")
-        if len(resp_token) == 3 && resp_token[0] == "e":
+        if len(resp_token) == 3 and resp_token[0] == "e":
             self._left_motor_speed = int(resp_token[1])
             return self._left_motor_speed
         else:
