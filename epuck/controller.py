@@ -81,12 +81,14 @@ class Controller(object):
         actually read the speed from e-puck's memory.
 
         """
-        self.logger.debug("Command: E.")
         # Send command to e-puck.
+        self.logger.debug("Command: E.")
         self.serial_connection.write("E\n")
+
         # Read response from e-puck.
         response = self.serial_connection.readline() 
         self.logger.debug("Answer: "+response)
+
         # The response should be in format: "e,left_speed,right_speed".
         # Check the response and set the internal representation.
         resp_token = response.split(",")
@@ -99,13 +101,15 @@ class Controller(object):
 
     @left_motor_speed.setter
     def left_motor_speed(self, new_speed):
-        self.logger.debug("Command: D,%d,%d" % (new_speed, _right_motor_speed))
         # Send command to e-puck.
+        self.logger.debug("Command: D,%d,%d" % (new_speed, _right_motor_speed))
         self.serial_connection.write("D,%d,%d\n" % 
             (new_speed, _right_motor_speed))
+
         # Read response from e-puck.
         response = self.serial_connection.readline()
         self.logger.debug("Answer: "+response)
+
         # The response should be "d".
         if response.startswith("d"):
             self._left_motor_speed = new_speed

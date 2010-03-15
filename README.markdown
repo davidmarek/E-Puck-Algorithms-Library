@@ -42,3 +42,19 @@ Připojení
             # rfcomm release rfcomm0
             # rfcomm connect rfcomm0
 
+TODO
+----
+
+1. Dopsat knihovnu pro komunikaci s E-Puck robotem využívající BTcom knihovnu.
+
+2. Zkontrolovat, že v knihovně nechybí nic, co by E-Puck robot mohl exportovat,
+   jen proto, že to není v BTcom knihovně.
+
+3. Najít literaturu k algoritmům, které by hezky demonstrovaly schopnosti 
+   E-Puck robota.
+
+    * Rozeznávání objektů pomocí kamery
+
+    * Tringulace pomocí signálu z mikrofonů
+
+    * Vyhýbání se objektům pomocí IR senzorů
