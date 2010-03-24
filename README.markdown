@@ -42,6 +42,10 @@ Připojení
             # rfcomm release rfcomm0
             # rfcomm connect rfcomm0
 
+5. Pokud se robot chová podivně (např. nereaguje na nějaké příkazy) tak je to
+   nejspíše tím, že mu dochází baterka! Není dobré ladit kód na robotovi, který
+   mele z posledního :-(
+
 TODO
 ----
 
