@@ -68,52 +68,90 @@ class Controller(object):
             raise ControllerError("E-Puck seems to be offline.")
         self.logger.info("E-Puck connected.")
 
-    @property
-    def left_motor_speed(self):
-        """The speed of left motor. 
+    def set_motor_speed(self, left, right):
+        """Set speed of motors.
         
         The speed is measured in pulses per second, one pulse is 
         aproximately 0.13mm. The speed can be in range 
         (-MAX_SPEED, MAX_SPEED). 
-        
-        It could have been saved only when changed and this method could
-        just return internal representation, but it's more reliable to 
-        actually read the speed from e-puck's memory.
 
         """
-        # Send command to e-puck.
-        self.logger.debug("Command: E.")
-        self.serial_connection.write("E\n")
+        # Check if the speeds are smaller than MAX_SPEED
+        if (-self.MAX_SPEED <= left <= self.MAX_SPEED) and \
+           (-self.MAX_SPEED <= right <= self.MAX_SPEED):
 
-        # Read response from e-puck.
-        response = self.serial_connection.readline() 
-        self.logger.debug("Answer: "+response)
+            # Send command to e-puck.
+            self.logger.debug("Command: D,%d,%d" % (left, right))
+            self.serial_connection.write("D,%d,%d\n" % (left, right))
 
-        # The response should be in format: "e,left_speed,right_speed".
-        # Check the response and set the internal representation.
-        resp_token = response.split(",")
-        if len(resp_token) == 3 and resp_token[0] == "e":
-            self._left_motor_speed = int(resp_token[1])
-            return self._left_motor_speed
+            # Read response from e-puck.
+            response = self.serial_connection.readline()
+            self.logger.debug("Answer: "+response)
+
+            # The response should be "d".
+            if response.startswith("d"):
+                self._left_motor_speed = left
+                self._right_motor_speed = right
+
+            elif "WELCOME" in response:
+                # E-Puck apparently thought it's nice to greet us again. 
+                # It did what we wanted, but sent us another line with help.
+                self._left_motor_speed = left
+                self._right_motor_speed = right
+
+                # Log the rest of greeting.
+                response = self.serial_connection.readline()
+                self.logger.debug("Answer: "+response)
+
+            else:
+                self.logger.error("Wrong answer from e-puck")
+                raise ControllerError("Wrong answer from e-puck")
+
         else:
-            self.logger.error("Wrong answer from e-puck")
-            raise ControllerError("Wrong answer from e-puck.")
+            self.logger.error("Speed out of range.")
+            raise ControllerError("Speed out of range.")
+
+    @property
+    def left_motor_speed(self):
+        """The speed of left motor. 
+        
+        The returned speed is obtained from internal representation.
+        These values may be incorrect if you are not using only functions from
+        this library to control E-Puck Robot.
+
+        """
+        return self._left_motor_speed
+
 
     @left_motor_speed.setter
     def left_motor_speed(self, new_speed):
-        # Send command to e-puck.
-        self.logger.debug("Command: D,%d,%d" % (new_speed, _right_motor_speed))
-        self.serial_connection.write("D,%d,%d\n" % 
-            (new_speed, _right_motor_speed))
+        """Set only left motor's speed.
 
-        # Read response from e-puck.
-        response = self.serial_connection.readline()
-        self.logger.debug("Answer: "+response)
+        The right motor's speed is not changed, it's used from internal
+        representation.
+        
+        """
+        self.set_motor_speed(new_speed, self.right_motor_speed)
 
-        # The response should be "d".
-        if response.startswith("d"):
-            self._left_motor_speed = new_speed
-        else:
-            self.logger.error("Wrong answer from e-puck")
-            raise ControllerException("Wrong answer from e-puck")
+    @property
+    def right_motor_speed(self):
+        """The speed of right motor. 
+        
+        The returned speed is obtained from internal representation.
+        These values may be incorrect if you are not using only functions from
+        this library to control E-Puck Robot.
+
+        """
+        return self._right_motor_speed
+
+
+    @right_motor_speed.setter
+    def right_motor_speed(self, new_speed):
+        """Set only right motor's speed.
+
+        The left motor's speed is not changed, it's used from internal
+        representation.
+        
+        """
+        self.set_motor_speed(self.left_motor_speed, new_speed)
 
