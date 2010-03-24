@@ -3,9 +3,12 @@
 
 """Low level control of E-Puck robot."""
 
+import re
 import serial
 import sys
 import logging
+import time
+import datetime
 
 class EPuckError(Exception):
     """Base class exception for this library."""
@@ -61,60 +64,78 @@ class Controller(object):
                 port=port,       # Port, where e-puck is connected.
                 baudrate=115200, # E-puck baudrate.
                 bytesize=8,      # E-puck bytesize.
-                timeout=0        # readline won't block execution.
+                timeout=0.1      # readline won't block execution.
             )
         except serial.serialutil.SerialException:
             self.logger.error("E-Puck seems to be offline.")
             raise ControllerError("E-Puck seems to be offline.")
         self.logger.info("E-Puck connected.")
 
+    def _send_command(self, command, expected_prefix):
+        """Send command and return response.
+        
+        """
+        # Send the command to e-puck.
+        self.logger.debug("Command:" + command)
+        self.serial_connection.write(command)
+
+        # Read the response from e-puck.
+        # This code was added when e-puck with low battery didn't listen.
+        # Most probably such tests aren't needed, but BEWARE OF LOW BATTERY!!!
+        response = ""
+        start = datetime.datetime.now()
+        while not response.startswith(expected_prefix):
+            response = self.serial_connection.readline() 
+            if ("WELCOME" in response) or (datetime.datetime.now() - start).seconds > 1:
+                self.serial_connection.write(command)
+                start = datetime.datetime.now()
+            self.logger.debug("Answer: " + response)
+
+        return response
+
+
+
     def set_motor_speed(self, left, right):
         """Set speed of motors.
         
-        The speed is measured in pulses per second, one pulse is 
-        aproximately 0.13mm. The speed can be in range 
-        (-MAX_SPEED, MAX_SPEED). 
-
         """
         # Check if the speeds are smaller than MAX_SPEED
         if (-self.MAX_SPEED <= left <= self.MAX_SPEED) and \
            (-self.MAX_SPEED <= right <= self.MAX_SPEED):
 
-            # Send command to e-puck.
-            self.logger.debug("Command: D,%d,%d" % (left, right))
-            self.serial_connection.write("D,%d,%d\n" % (left, right))
+            response = self._send_command("D,%d,%d\r" % (left, right), "d")
 
-            # Read response from e-puck.
-            response = self.serial_connection.readline()
-            self.logger.debug("Answer: "+response)
-
-            # The response should be "d".
-            if response.startswith("d"):
-                self._left_motor_speed = left
-                self._right_motor_speed = right
-
-            elif "WELCOME" in response:
-                # E-Puck apparently thought it's nice to greet us again. 
-                # It did what we wanted, but sent us another line with help.
-                self._left_motor_speed = left
-                self._right_motor_speed = right
-
-                # Log the rest of greeting.
-                response = self.serial_connection.readline()
-                self.logger.debug("Answer: "+response)
-
-            else:
-                self.logger.error("Wrong answer from e-puck")
-                raise ControllerError("Wrong answer from e-puck")
+            self._left_motor_speed = left
+            self._right_motor_speed = right
 
         else:
             self.logger.error("Speed out of range.")
             raise ControllerError("Speed out of range.")
 
+    def get_motor_speed(self):
+        """Get speed of motors.
+
+        The speed is measured in pulses per second, one pulse is 
+        aproximately 0.13mm. The speed can be in range 
+        (-MAX_SPEED, MAX_SPEED). 
+
+        """
+        response = self._send_command("E\r", "e")
+
+        # The response should be "e,left_speed,right_speed"
+        regexp = re.compile(r'^e,(-?\d+),(-?\d+)')
+        match = regexp.match(response)
+        if match:
+            _left_motor_speed = match.groups()[0]
+            _right_motor_speed = match.groups()[1]
+        else:
+            self.logger.error("Wrong answer from e-puck.")
+            raise ControllerError("Wrong answer from e-puck.")
+
     @property
     def left_motor_speed(self):
         """The speed of left motor. 
-        
+
         The returned speed is obtained from internal representation.
         These values may be incorrect if you are not using only functions from
         this library to control E-Puck Robot.
@@ -155,3 +176,9 @@ class Controller(object):
         """
         self.set_motor_speed(self.left_motor_speed, new_speed)
 
+if __name__ == '__main__':
+    import logging
+    
+    logging.basicConfig(level=logging.DEBUG)
+    
+    r = Controller('/dev/rfcomm0')
