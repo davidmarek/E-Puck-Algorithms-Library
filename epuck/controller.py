@@ -76,24 +76,13 @@ class Controller(object):
         
         """
         # Send the command to e-puck.
-        self.logger.debug("Command:" + command)
+        self.logger.debug("Command: " + command)
         self.serial_connection.write(command)
 
-        # Read the response from e-puck.
-        # This code was added when e-puck with low battery didn't listen.
-        # Most probably such tests aren't needed, but BEWARE OF LOW BATTERY!!!
-        response = ""
-        start = datetime.datetime.now()
-        while not response.startswith(expected_prefix):
-            response = self.serial_connection.readline() 
-            if ("WELCOME" in response) or (datetime.datetime.now() - start).seconds > 1:
-                self.serial_connection.write(command)
-                start = datetime.datetime.now()
-            self.logger.debug("Answer: " + response)
+        response = self.serial_connection.readline() 
+        self.logger.info("Response: " + response)
 
         return response
-
-
 
     def set_motor_speed(self, left, right):
         """Set speed of motors.
