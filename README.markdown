@@ -46,6 +46,13 @@ Připojení
    nejspíše tím, že mu dochází baterka! Není dobré ladit kód na robotovi, který
    mele z posledního :-(
 
+Instalace BTcom
+---------------
+
+Je potřeba mít robota připojeného k počítači. Pak stačí použít perlovský skript
+[epuckupload](http://svn.gna.org/viewcvs/e-puck/trunk/tool/bootloader/computer_side/multi_platform/
+"epuckupload"). Stačí se řídit instrukcemi v přiloženém README.
+
 TODO
 ----
 
