@@ -10,20 +10,7 @@ import logging
 import time
 import datetime
 
-class EPuckError(Exception):
-    """Base class exception for this library."""
-
-    def __init__(self, message):
-        """Create E-Puck exception.
-
-        Arguments:
-            message -- Description of what went wrong.
-
-        """
-        self.message = message
-
-    def __str__(self):
-        return self.message
+from epuck import EPuckError
 
 class ControllerError(EPuckError):
     """Controller exception, E-puck robot probably not responding."""
@@ -51,9 +38,14 @@ class Controller(object):
             port -- port where the robot is connected, e.g. /dev/rfcomm0.
 
         """
-        #Initialize atributes
+        # Initialize atributes
+
+        # Initialize motor speed
         self._left_motor_speed = 0  # Speed of left wheel
         self._right_motor_speed = 0 # Speed of right wheel
+
+        # Initialize body led
+        self._body_led = False
 
         # All messages are logged using the logging module.
         self.logger = logging.getLogger('epuck.controller.Controller')
@@ -71,7 +63,7 @@ class Controller(object):
             raise ControllerError("E-Puck seems to be offline.")
         self.logger.info("E-Puck connected.")
 
-    def _send_command(self, command, expected_prefix):
+    def _send_command(self, command):
         """Send command and return response.
         
         """
@@ -84,6 +76,10 @@ class Controller(object):
 
         return response
 
+################################################################################
+# Speed                                                                        
+################################################################################
+
     def set_motor_speed(self, left, right):
         """Set speed of motors.
         
@@ -92,7 +88,7 @@ class Controller(object):
         if (-self.MAX_SPEED <= left <= self.MAX_SPEED) and \
            (-self.MAX_SPEED <= right <= self.MAX_SPEED):
 
-            response = self._send_command("D,%d,%d\r" % (left, right), "d")
+            response = self._send_command("D,%d,%d\r" % (left, right))
 
             self._left_motor_speed = left
             self._right_motor_speed = right
@@ -111,7 +107,7 @@ class Controller(object):
         Returns tuple (left motor speed, right motor speed).
 
         """
-        response = self._send_command("E\r", "e")
+        response = self._send_command("E\r")
 
         # The response should be "e,left_speed,right_speed"
         regexp = re.compile(r'^e,(-?\d+),(-?\d+)')
@@ -168,6 +164,34 @@ class Controller(object):
         
         """
         self.set_motor_speed(self.left_motor_speed, new_speed)
+
+################################################################################
+# LEDs
+################################################################################
+
+    @property
+    def body_led(self):
+        """The green body LED status.
+        
+        """
+        return self._body_led
+
+    @body_led.setter
+    def body_led(self, turn_on):
+        """Set the green body LED status.
+
+        Arguments:
+            turn_on - whether turn on or off the body LED.
+
+        """
+        response = self._send_command('B,%d\r' % int(turn_on))
+
+        if not response.startswith('b'):
+            self.logger.error('Wrong response')
+            raise ControllerError('Wrong response')
+
+        self._body_led = turn_on
+
 
 if __name__ == '__main__':
     import logging
