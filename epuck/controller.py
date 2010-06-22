@@ -108,6 +108,8 @@ class Controller(object):
         aproximately 0.13mm. The speed can be in range 
         (-MAX_SPEED, MAX_SPEED). 
 
+        Returns tuple (left motor speed, right motor speed).
+
         """
         response = self._send_command("E\r", "e")
 
@@ -120,6 +122,8 @@ class Controller(object):
         else:
             self.logger.error("Wrong answer from e-puck.")
             raise ControllerError("Wrong answer from e-puck.")
+
+        return (_left_motor_speed, _right_motor_speed)
 
     @property
     def left_motor_speed(self):
