@@ -171,14 +171,14 @@ class Controller(object):
 
     @property
     def body_led(self):
-        """The green body LED status.
+        """The green body LED's status.
         
         """
         return self._body_led
 
     @body_led.setter
     def body_led(self, turn_on):
-        """Set the green body LED status.
+        """Set the green body LED's status.
 
         Arguments:
             turn_on - whether turn on or off the body LED.
@@ -187,10 +187,57 @@ class Controller(object):
         response = self._send_command('B,%d\r' % int(turn_on))
 
         if not response.startswith('b'):
-            self.logger.error('Wrong response')
-            raise ControllerError('Wrong response')
+            self.logger.error('wrong response')
+            raise ControllerError('wrong response')
 
         self._body_led = turn_on
+
+
+    @property
+    def front_led(self):
+        """The red front LED's status.
+
+        """
+        return self._front_led
+
+    @front_led.setter
+    def front_led(self, turn_on):
+        """Set the red front LED's status.
+
+        Arguments:
+            turn_on - whether turn on or off the body LED.
+
+        """
+        response = self._send_command('F,%d\r' % int(turn_on))
+
+        if not response.startswith('f'):
+            self.logger.error('wrong response')
+            raise ControllerError('wrong response')
+
+        self._front_led = turn_on
+
+
+    def set_led_state(self, led_no, turn_on):
+        """Set the LED's status.
+
+        There are 8 LEDs on the e-puck robot. The LED number 0 is the frontal
+        one, the LED numbering is increasing clockwise.
+
+        Arguments:
+            led_no - the number of the affected LED.
+            turn_on - whether turn on or off the chosen LED.
+
+        """
+        if 0 <= led_no <= 8:
+            response = self._send_command('L,%d,%d\r' % (led_no, int(turn_on)))
+
+            if not response.startswith('l'):
+                self.logger.error('wrong response')
+                raise ControllerError('wrong response')
+
+        else:
+            self.logger.error('LED number out of range.')
+            raise ControllerErro('LED number out of range.')
 
 
 if __name__ == '__main__':
