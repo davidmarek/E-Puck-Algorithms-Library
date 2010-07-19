@@ -237,7 +237,33 @@ class Controller(object):
 
         else:
             self.logger.error('LED number out of range.')
-            raise ControllerErro('LED number out of range.')
+            raise ControllerError('LED number out of range.')
+
+################################################################################
+# Turning switch
+################################################################################
+
+    @property
+    def turning_switch(self):
+        """The position of the rotating 16 positions switch.
+
+        Position 0 correspond to the arrow pointing on the right when looking
+        in the same direction as the robot.
+
+        """
+        response = self._send_command('C\r')
+
+        if not response.startswith('c'):
+            self.logger.error('wrong response')
+            raise ControllerError('wrong response')
+        
+        try:
+            c, position = response.split(',')
+            return int(position)
+        except ValueError:
+            self.logger.error('wrong response')
+            raise ControllerError('wrong response')
+            
 
 
 if __name__ == '__main__':
