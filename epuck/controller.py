@@ -5,10 +5,7 @@
 
 import re
 import serial
-import sys
 import logging
-import time
-import datetime
 
 from epuck import EPuckError
 
@@ -76,6 +73,17 @@ class Controller(object):
 
         return response
 
+    def _check_response(self, response, expected):
+        """Check if the response is what is expected.
+
+        The e-puck robot's response always starts with the same letter
+        (lowercase) as the sent command.
+
+        """
+        if not response.startswith(expected):
+            self.logger.error("Wrong response.")
+            raise EPuckError("Wrong response.")
+
 ################################################################################
 # Speed                                                                        
 ################################################################################
@@ -89,6 +97,7 @@ class Controller(object):
            (-self.MAX_SPEED <= right <= self.MAX_SPEED):
 
             response = self._send_command("D,%d,%d\r" % (left, right))
+            self._check_response(response, 'd')
 
             self._left_motor_speed = left
             self._right_motor_speed = right
@@ -108,18 +117,16 @@ class Controller(object):
 
         """
         response = self._send_command("E\r")
+        self._check_response(response, 'e')
 
-        # The response should be "e,left_speed,right_speed"
-        regexp = re.compile(r'^e,(-?\d+),(-?\d+)')
-        match = regexp.match(response)
-        if match:
-            _left_motor_speed = match.groups()[0]
-            _right_motor_speed = match.groups()[1]
-        else:
+        try:
+            e, left, right = response.split(',')
+
+            return (int(left), int(right))
+
+        except ValueError:
             self.logger.error("Wrong answer from e-puck.")
             raise ControllerError("Wrong answer from e-puck.")
-
-        return (_left_motor_speed, _right_motor_speed)
 
     @property
     def left_motor_speed(self):
@@ -185,10 +192,7 @@ class Controller(object):
 
         """
         response = self._send_command('B,%d\r' % int(turn_on))
-
-        if not response.startswith('b'):
-            self.logger.error('wrong response')
-            raise ControllerError('wrong response')
+        self._check_response(response, 'b')
 
         self._body_led = turn_on
 
@@ -209,10 +213,7 @@ class Controller(object):
 
         """
         response = self._send_command('F,%d\r' % int(turn_on))
-
-        if not response.startswith('f'):
-            self.logger.error('wrong response')
-            raise ControllerError('wrong response')
+        self._check_response(response, 'f')
 
         self._front_led = turn_on
 
@@ -230,10 +231,7 @@ class Controller(object):
         """
         if 0 <= led_no <= 8:
             response = self._send_command('L,%d,%d\r' % (led_no, int(turn_on)))
-
-            if not response.startswith('l'):
-                self.logger.error('wrong response')
-                raise ControllerError('wrong response')
+            self._check_response(response, 'l')
 
         else:
             self.logger.error('LED number out of range.')
@@ -252,19 +250,16 @@ class Controller(object):
 
         """
         response = self._send_command('C\r')
+        self._check_response(response, 'c')
 
-        if not response.startswith('c'):
-            self.logger.error('wrong response')
-            raise ControllerError('wrong response')
-        
         try:
             c, position = response.split(',')
 
             return int(position)
 
         except ValueError:
-            self.logger.error('wrong response')
-            raise ControllerError('wrong response')
+            self.logger.error('Wrong response.')
+            raise ControllerError('Wrong response.')
 
 ################################################################################
 # Proximity sensors
@@ -286,25 +281,49 @@ class Controller(object):
         
         """
         response = self._send_command('N\r')
-
-        if not response.startswith('n'):
-            self.logger.error('wrong response')
-            raise ControllerError('wrong response')
+        self._check_response(response, 'n')
 
         try:
             r = response.split(',')
-            values = zip(['R10', 'R45', 'R90', 'RB', 'LB', 'L90', 'L45', 'L10'], r[1:])
-            result = {}
 
-            for key, value in values:
-                result[key] = int(value)
-
-            return result
+            return dict(zip(['R10', 'R45', 'R90', 'RB', 'LB', 'L90', 'L45',
+                             'L10'], r[1:]))
 
         except ValueError:
-            self.logger.error('wrong response')
-            raise ControllerError('wrong response')
+            self.logger.error('Wrong response.')
+            raise ControllerError('Wrong response.')
 
+################################################################################
+# Ambient light sensors
+################################################################################
+
+    @property
+    def ambient_light_sensors(self):
+        """The values of the 8 ambient light sensors.
+
+        The 12 bit values of the 8 ambient light sensors. For left and right
+        side there is one sensor situated 10 degrees from the front, others are
+        45 degrees and 90 degrees from the front. For each side there is also
+        one sensor on the back side.
+
+        The keys for sensor values are following: L10, L45, L90, LB, R10, R45,
+        R90, RB.
+
+        The values are in range [0, 4095].
+
+        """
+        response = self._send_command('N\r')
+        self._check_response(response, 'n')
+
+        try:
+            r = response.split(',')
+
+            return dict(zip(['R10', 'R45', 'R90', 'RB', 'LB', 'L90', 'L45',
+                             'L10'], r[1:]))
+
+        except ValueError:
+            self.logger.error('Wrong response.')
+            raise ControllerError('Wrong response.')
 
 
 if __name__ == '__main__':
