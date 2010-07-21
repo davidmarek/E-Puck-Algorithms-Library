@@ -259,11 +259,52 @@ class Controller(object):
         
         try:
             c, position = response.split(',')
+
             return int(position)
+
         except ValueError:
             self.logger.error('wrong response')
             raise ControllerError('wrong response')
-            
+
+################################################################################
+# Proximity sensors
+################################################################################
+
+    @property
+    def proximity_sensors(self):
+        """The values of the 8 proximity sensors.
+
+        The 12 bit values of the 8 proximity sensors. For left and right side
+        there is one sensor situated 10 degrees from the front, others are 45
+        degrees and 90 degrees from the front. For each side there is also one
+        sensor on the back side.
+
+        The keys for sensor values are following: L10, L45, L90, LB, R10, R45,
+        R90, RB.
+
+        The values are in range [0, 4095].
+        
+        """
+        response = self._send_command('N\r')
+
+        if not response.startswith('n'):
+            self.logger.error('wrong response')
+            raise ControllerError('wrong response')
+
+        try:
+            r = response.split(',')
+            values = zip(['R10', 'R45', 'R90', 'RB', 'LB', 'L90', 'L45', 'L10'], r[1:])
+            result = {}
+
+            for key, value in values:
+                result[key] = int(value)
+
+            return result
+
+        except ValueError:
+            self.logger.error('wrong response')
+            raise ControllerError('wrong response')
+
 
 
 if __name__ == '__main__':
