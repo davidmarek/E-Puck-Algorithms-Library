@@ -3,12 +3,11 @@
 
 """Low level control of E-Puck robot."""
 
-import re
 import serial
 import logging
+import time
 
 from epuck import EPuckError
-
 class ControllerError(EPuckError):
     """Controller exception, E-puck robot probably not responding."""
     pass
@@ -53,7 +52,7 @@ class Controller(object):
                 port=port,       # Port, where e-puck is connected.
                 baudrate=115200, # E-puck baudrate.
                 bytesize=8,      # E-puck bytesize.
-                timeout=0.1      # readline won't block execution.
+                timeout=0      # readline won't block execution.
             )
         except serial.serialutil.SerialException:
             self.logger.error("E-Puck seems to be offline.")
@@ -65,11 +64,11 @@ class Controller(object):
         
         """
         # Send the command to e-puck.
-        self.logger.debug("Command: " + command)
+        self.logger.debug("Command: " + str(command))
         self.serial_connection.write(command)
 
         response = self.serial_connection.readline() 
-        self.logger.info("Response: " + response)
+        self.logger.info("Response: " + str(response))
 
         return response
 
@@ -120,7 +119,7 @@ class Controller(object):
         self._check_response(response, 'e')
 
         try:
-            e, left, right = response.split(',')
+            _, left, right = response.split(',')
 
             return (int(left), int(right))
 
@@ -325,6 +324,18 @@ class Controller(object):
             self.logger.error('Wrong response.')
             raise ControllerError('Wrong response.')
 
+    
+################################################################################
+# Camera
+################################################################################
+
+    def get_image(self):
+        self.serial_connection.write(chr(183)+chr(0))
+        x = self.serial_connection.read(3)
+        print x
+        size = ord(x[1]) * ord(x[2]) * 2
+        with open('image', 'w') as f:
+            f.write(self.serial_connection.read(size))
 
 if __name__ == '__main__':
     import logging
