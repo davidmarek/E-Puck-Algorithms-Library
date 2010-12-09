@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import logging
 import os
 import Queue
 import select
@@ -9,6 +10,8 @@ import socket
 import threading
 import time
 
+from epuck import EPuckError
+
 
 class AsyncCommError(EPuckError): 
     """
@@ -16,6 +19,22 @@ class AsyncCommError(EPuckError):
     
     """
     pass
+
+
+class TestingConnection(socket.socket):
+    """
+    Socket acting like a serial connection for testing purposes.
+
+    """
+
+    def read(self, buffer_size):
+        return self.recv(buffer_size)
+
+    def readline(self):
+        return self.recv(65536)
+
+    def write(self, msg):
+        self.send(msg)
 
 
 class RequestHandler(object):
@@ -31,10 +50,11 @@ class RequestHandler(object):
         self.response_received = False
         self.response_code = response_code
         self.accomplished = threading.Condition()
+        self.logger = logging.getLogger('RequestHandler')
 
     def get_command(self):
         """Return the command that was sent."""
-        return command
+        return self.command
 
     def own_response(self, code):
         return code == self.response_code
@@ -47,7 +67,12 @@ class RequestHandler(object):
         """
         self.response = response
         self.response_received = True
+
+        self.accomplished.acquire()
         self.accomplished.notify()
+        self.accomplished.release()
+
+        self.logger.debug('Received response: "%s".' % response)
 
     def get_response(self):
         """Return the response."""
@@ -71,11 +96,16 @@ class AsyncComm(threading.Thread):
 
     """
 
-    def __init__(self, port, timeout=0.2, **kwargs):
+    def __init__(self, port, timeout=0.2, offline=False, offline_address=None, **kwargs):
         threading.Thread.__init__(self)
 
         # Create a connection to the robot.
-        self.serial_connection = serial.Serial(port, **kwargs)
+        # It is possible to test this class without robot using sockets.
+        if offline and offline_address is not None:
+            self.serial_connection = TestingConnection()
+            self.serial_connection.connect(offline_address)
+        else:
+            self.serial_connection = serial.Serial(port, **kwargs)
 
         # Create a pipe used to interrupt the select call.
         self.interrupt_fd_read, self.interrupt_fd_write = os.pipe()
@@ -88,6 +118,8 @@ class AsyncComm(threading.Thread):
 
         # Requests that are older than timeout seconds must be sent again.
         self.timeout = timeout
+
+        self.logger = logging.getLogger('AsyncComm')
 
     def start(self):
         """Start the manager as new thread."""
@@ -105,21 +137,31 @@ class AsyncComm(threading.Thread):
         commands to send to the robot.
 
         """
+        self.logger.debug('Starting main loop.')
+
         while self.running:
             input_sockets = [self.serial_connection, self.interrupt_fd_read]
+            self.logger.debug('Before select.')
             input_sockets, _, _ = select.select(input_sockets, [], [], self.timeout)
+            self.logger.debug('After select.')
             
             if len(input_sockets) == 0:
                 # Timeout was reached. Check the requests.
-                self._check_requests_timeout(self)
+                self.logger.debug('Timeout expired.')
+                self._check_requests_timeout()
 
             for i in input_sockets:
                 # The user wants to send a command.
                 if i == self.interrupt_fd_read:
+                    self.logger.debug('Received command.')
                     self._process_interrupt()
                 # The robot is sending response.
                 elif i == self.serial_connection:
+                    self.logger.debug('Received response from robot.')
                     self._read_response()
+
+    def _stop_main_loop(self):
+        self.running = False
 
     def _process_interrupt(self):
         """Process the interrupt from main loop.
@@ -129,28 +171,34 @@ class AsyncComm(threading.Thread):
         """
         # Read the command.
         command = os.read(self.interrupt_fd_read, 0xff)
+        self.logger.debug('Command: "%s".' % command)
         command_handlers = {
             'NEW': self._write_request,
             'STOP': self._stop_main_loop,
         }
         command_handlers[command]()
 
-    def send_command(self, command):
+    def send_command(self, command, command_code):
         """Create new request and notify the main loop.
         
         The main loop called select on a pipe. To notify the main loop write
         something to the pipe. The sent data are not parsed.
         
         """
-        request = RequestHandler(command)
+        request = RequestHandler(command, command_code)
         self._enqueue_request(request)
+        return request
 
     def _write_request(self):
         """Write the request to the serial connection."""
         # Remove the request from queue.
         request = self.request_queue.get()
+
         # Send the request to the robot.
+        command = request.get_command()
+        self.logger.debug('Sending command: "%s".' % command)
         self.serial_connection.write(request.get_command())
+
         # Add the request to another queue to wait for response.
         self.response_queue.put((time.time(), request))
 
@@ -192,7 +240,7 @@ class AsyncComm(threading.Thread):
 
         raise AsyncCommError("No request found for received response.")
 
-    def _check_requests(self):
+    def _check_requests_timeout(self):
         old_requests = True
         while old_requests:
             sent_time, request = self.response_queue.get()
