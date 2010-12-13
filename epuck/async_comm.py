@@ -6,17 +6,17 @@ import os
 import Queue
 import select
 import serial
-import socket                    
+import socket
 import threading
 import time
 
 from epuck import EPuckError
 
 
-class AsyncCommError(EPuckError): 
+class AsyncCommError(EPuckError):
     """
     An error occured during the asynchronous communication with E-Puck robot.
-    
+
     """
     pass
 
@@ -57,13 +57,14 @@ class RequestHandler(object):
         return self.command
 
     def own_response(self, code):
+        """Decide whether the code belongs to this request."""
         return code == self.response_code
 
     def set_response(self, response):
-        """Set the response to the sent request. 
-        
+        """Set the response to the sent request.
+
         Also notify all waiting for the request.
-        
+
         """
         self.response = response
         self.response_received = True
@@ -79,7 +80,7 @@ class RequestHandler(object):
         return self.response
 
     def done(self):
-        """Return whether a response have been received."""
+        """Return whether a response has been received."""
         return self.response_received
 
     def join(self):
@@ -133,8 +134,8 @@ class AsyncComm(threading.Thread):
     def run(self):
         """The main loop of the communication manager.
 
-        Call select and wait till the robot send something or the user has some
-        commands to send to the robot.
+        Call select and wait till the robot sends something or the user has
+        some commands to send to the robot.
 
         """
         self.logger.debug('Starting main loop.')
@@ -144,7 +145,7 @@ class AsyncComm(threading.Thread):
             self.logger.debug('Before select.')
             input_sockets, _, _ = select.select(input_sockets, [], [], self.timeout)
             self.logger.debug('After select.')
-            
+
             if len(input_sockets) == 0:
                 # Timeout was reached. Check the requests.
                 self.logger.debug('Timeout expired.')
@@ -155,6 +156,7 @@ class AsyncComm(threading.Thread):
                 if i == self.interrupt_fd_read:
                     self.logger.debug('Received command.')
                     self._process_interrupt()
+
                 # The robot is sending response.
                 elif i == self.serial_connection:
                     self.logger.debug('Received response from robot.')
@@ -164,27 +166,24 @@ class AsyncComm(threading.Thread):
         self.running = False
 
     def _process_interrupt(self):
-        """Process the interrupt from main loop.
+        """Process the interrupt from the main loop.
 
-        The interrupt can be sending new command or terminating the main loop.
+        The interrupt can be "send new command" or "terminate the main loop".
 
         """
         # Read the command.
         command = os.read(self.interrupt_fd_read, 0xff)
+
         self.logger.debug('Command: "%s".' % command)
         command_handlers = {
             'NEW': self._write_request,
             'STOP': self._stop_main_loop,
         }
+        # Run correct handler.
         command_handlers[command]()
 
     def send_command(self, command, command_code):
-        """Create new request and notify the main loop.
-        
-        The main loop called select on a pipe. To notify the main loop write
-        something to the pipe. The sent data are not parsed.
-        
-        """
+        """Create new request and notify the main loop."""
         request = RequestHandler(command, command_code)
         self._enqueue_request(request)
         return request
@@ -203,7 +202,7 @@ class AsyncComm(threading.Thread):
         self.response_queue.put((time.time(), request))
 
     def _read_response(self):
-        """Read the response from robot and remove the command from queue."""
+        """Read a response and save it."""
         code = self.serial_connection.read(1)
 
         if ord(code) >= 127:
@@ -214,20 +213,33 @@ class AsyncComm(threading.Thread):
         self._save_response(code, response)
 
     def _read_binary_data(self):
+        """Read binary data from the robot.
+
+        Some responses are binary. The robot first sends 2 bytes containing the
+        size of the data. The data then follows.
+
+        """
         lo, hi = self.serial_connection.read(2)
         size = hi << 8 + lo
         data = self.serial_connection.read(size)
         return data
 
     def _read_text_data(self):
+        """Read text response from the robot.
+
+        Some responses are text terminated by newline character.
+
+        """
         data = self.serial_connection.readline()
         return data
 
     def _save_response(self, code, response):
+        """Find the right request and give it the response."""
         request = self._get_request(code)
         request.set_response(response)
 
     def _get_request(self, code):
+        """Find the right request for given response code."""
         while not self.response_queue.empty():
             sent_time, first_request = self.response_queue.get()
 
@@ -241,17 +253,23 @@ class AsyncComm(threading.Thread):
         raise AsyncCommError("No request found for received response.")
 
     def _check_requests_timeout(self):
+        """Check if requests are not waiting too long.
+
+        If there is a request waiting longer than the timeout limit, assume the
+        message was lost and send it again.
+
+        """
         old_requests = True
         while old_requests:
             sent_time, request = self.response_queue.get()
             if time.time() - sent_time > self.timeout:
                 self._enqueue_request(request)
-            else: 
+            else:
                 self.response_queue.put((sent_time, request))
                 old_requests = False
 
     def _enqueue_request(self, request):
+        "Put the request into request_queue and notify the main loop."""
         self.request_queue.put(request)
         os.write(self.interrupt_fd_write, "NEW")
-        
 
