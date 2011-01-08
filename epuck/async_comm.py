@@ -44,11 +44,12 @@ class RequestHandler(object):
 
     """
 
-    def __init__(self, command, response_code):
+    def __init__(self, command, response_code, timestamp):
         self.command = command
-        self.response = None
-        self.response_received = False
+        self.timestamp = timestamp
         self.response_code = response_code
+
+        self.response = None
         self.accomplished = threading.Condition()
         self.logger = logging.getLogger('RequestHandler')
 
@@ -56,9 +57,9 @@ class RequestHandler(object):
         """Return the command that was sent."""
         return self.command
 
-    def own_response(self, code):
+    def own_response(self, code, timestamp):
         """Decide whether the code belongs to this request."""
-        return code == self.response_code
+        return code == self.response_code and self.timestamp == timestamp
 
     def set_response(self, response):
         """Set the response to the sent request.
@@ -67,21 +68,18 @@ class RequestHandler(object):
 
         """
         self.response = response
-        self.response_received = True
 
         self.accomplished.acquire()
         self.accomplished.notify()
         self.accomplished.release()
 
-        self.logger.debug('Received response: "%s".' % response)
-
     def get_response(self):
         """Return the response."""
         return self.response
 
-    def done(self):
+    def response_received(self):
         """Return whether a response has been received."""
-        return self.response_received
+        return self.response is not None
 
     def join(self):
         """Wait until the response is received."""
@@ -99,6 +97,7 @@ class AsyncComm(threading.Thread):
 
     def __init__(self, port, timeout=0.2, offline=False, offline_address=None, **kwargs):
         threading.Thread.__init__(self)
+        self.setDaemon(True)
 
         # Create a connection to the robot.
         # It is possible to test this class without robot using sockets.
@@ -114,14 +113,11 @@ class AsyncComm(threading.Thread):
         # Create queues for requests and responses.
         # Stored are only the requests.
         self.request_queue = Queue.Queue()
-        # Stored are tuples (timestamp, request).
+        # Stored are tuples (time of insertion, request).
         self.response_queue = Queue.PriorityQueue()
 
         # Requests that are older than timeout seconds must be sent again.
         self.timeout = timeout
-
-        # Number to distinguish commands with same code.
-        self.timestamp = 0
 
         self.logger = logging.getLogger('AsyncComm')
 
@@ -145,9 +141,7 @@ class AsyncComm(threading.Thread):
 
         while self.running:
             input_sockets = [self.serial_connection, self.interrupt_fd_read]
-            self.logger.debug('Before select.')
             input_sockets, _, _ = select.select(input_sockets, [], [], self.timeout)
-            self.logger.debug('After select.')
 
             if len(input_sockets) == 0:
                 # Timeout was reached. Check the requests.
@@ -157,12 +151,10 @@ class AsyncComm(threading.Thread):
             for i in input_sockets:
                 # The user wants to send a command.
                 if i == self.interrupt_fd_read:
-                    self.logger.debug('Received command.')
                     self._process_interrupt()
 
                 # The robot is sending response.
                 elif i == self.serial_connection:
-                    self.logger.debug('Received response from robot.')
                     self._read_response()
 
     def _stop_main_loop(self):
@@ -177,7 +169,6 @@ class AsyncComm(threading.Thread):
         # Read the command.
         command = os.read(self.interrupt_fd_read, 0xff)
 
-        self.logger.debug('Command: "%s".' % command)
         command_handlers = {
             'NEW': self._write_request,
             'STOP': self._stop_main_loop,
@@ -185,9 +176,9 @@ class AsyncComm(threading.Thread):
         # Run correct handler.
         command_handlers[command]()
 
-    def send_command(self, command, command_code):
+    def send_command(self, command, timestamp, command_code):
         """Create new request and notify the main loop."""
-        timestamp = (timestamp + 1) % 255
+        self.logger.debug('Sending new command. Command: "%s", code: "%s", timestamp: "%s".' % (command, command_code, timestamp))
         request = RequestHandler(command, command_code, timestamp)
         self._enqueue_request(request)
         return request
@@ -199,7 +190,6 @@ class AsyncComm(threading.Thread):
 
         # Send the request to the robot.
         command = request.get_command()
-        self.logger.debug('Sending command: "%s".' % command)
         self.serial_connection.write(request.get_command())
 
         # Add the request to another queue to wait for response.
@@ -210,11 +200,16 @@ class AsyncComm(threading.Thread):
         code = self.serial_connection.read(1)
 
         if ord(code) >= 127:
+            timestamp = self.serial_connection.read(1)
             response = self._read_binary_data()
         else:
-            response = self._read_text_data()
+            response = self._read_text_data().split(',', 1)
+            timestamp = int(response[0])
+            response = response[1]
 
-        self._save_response(code, response)
+        self.logger.debug('Received response. Code: "%s", timestamp: "%s", response: "%s".' % (code, timestamp, response))
+
+        self._save_response(code, timestamp, response)
 
     def _read_binary_data(self):
         """Read binary data from the robot.
@@ -237,17 +232,17 @@ class AsyncComm(threading.Thread):
         data = self.serial_connection.readline()
         return data
 
-    def _save_response(self, code, response):
+    def _save_response(self, code, timestamp, response):
         """Find the right request and give it the response."""
-        request = self._get_request(code)
+        request = self._get_request(code, timestamp)
         request.set_response(response)
 
-    def _get_request(self, code):
+    def _get_request(self, code, timestamp):
         """Find the right request for given response code."""
         while not self.response_queue.empty():
             sent_time, first_request = self.response_queue.get()
 
-            if first_request.own_response(code):
+            if first_request.own_response(code, timestamp):
                 return first_request
             else:
                 # E-puck process tasks synchronously, that means this request
@@ -276,4 +271,16 @@ class AsyncComm(threading.Thread):
         "Put the request into request_queue and notify the main loop."""
         self.request_queue.put(request)
         os.write(self.interrupt_fd_write, "NEW")
+
+
+if __name__ == '__main__':
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
+
+    a = AsyncComm(None, timeout=20, offline=True, offline_address=('localhost',65432))
+    a.start()
+    while True:
+        command = raw_input('> ')
+        a.send_command(command, int(command.split(',', 1)[0][1:]), command[0])
+        print
 
