@@ -6,35 +6,18 @@ import os
 import Queue
 import select
 import serial
-import socket
 import threading
 import time
 
-from epuck import EPuckError
+from epuck.comm import CommError, TestConnection
 
 
-class AsyncCommError(EPuckError):
+class AsyncCommError(CommError):
     """
     An error occured during the asynchronous communication with E-Puck robot.
 
     """
     pass
-
-
-class TestingConnection(socket.socket):
-    """
-    Socket acting like a serial connection for testing purposes.
-
-    """
-
-    def read(self, buffer_size):
-        return self.recv(buffer_size)
-
-    def readline(self):
-        return self.recv(65536)
-
-    def write(self, msg):
-        self.send(msg)
 
 
 class RequestHandler(object):
@@ -102,7 +85,7 @@ class AsyncComm(threading.Thread):
         # Create a connection to the robot.
         # It is possible to test this class without robot using sockets.
         if offline and offline_address is not None:
-            self.serial_connection = TestingConnection()
+            self.serial_connection = TestConnection()
             self.serial_connection.connect(offline_address)
         else:
             self.serial_connection = serial.Serial(port, **kwargs)
@@ -158,12 +141,15 @@ class AsyncComm(threading.Thread):
                     self._read_response()
 
     def _stop_main_loop(self):
+        """Stop the main loop."""
         self.running = False
 
     def _process_interrupt(self):
         """Process the interrupt from the main loop.
 
-        The interrupt can be "send new command" or "terminate the main loop".
+        The interrupt can be:
+            'NEW' = send new command
+            'STOP' = terminate the main loop
 
         """
         # Read the command.
@@ -190,7 +176,7 @@ class AsyncComm(threading.Thread):
 
         # Send the request to the robot.
         command = request.get_command()
-        self.serial_connection.write(request.get_command())
+        self.serial_connection.write(command)
 
         # Add the request to another queue to wait for response.
         self.response_queue.put((time.time(), request))
@@ -199,9 +185,11 @@ class AsyncComm(threading.Thread):
         """Read a response and save it."""
         code = self.serial_connection.read(1)
 
+        # Binary data
         if ord(code) >= 127:
             timestamp = self.serial_connection.read(1)
             response = self._read_binary_data()
+        # Text data
         else:
             response = self._read_text_data().split(',', 1)
             timestamp = int(response[0])
@@ -224,7 +212,7 @@ class AsyncComm(threading.Thread):
         return data
 
     def _read_text_data(self):
-        """Read text response from the robot.
+        """Read a text response from the robot.
 
         Some responses are text terminated by newline character.
 
@@ -268,13 +256,13 @@ class AsyncComm(threading.Thread):
                 old_requests = False
 
     def _enqueue_request(self, request):
-        "Put the request into request_queue and notify the main loop."""
+        "Put the request into the request_queue and notify the main loop."""
         self.request_queue.put(request)
         os.write(self.interrupt_fd_write, "NEW")
 
 
+# Test the module.
 if __name__ == '__main__':
-    import logging
     logging.basicConfig(level=logging.DEBUG)
 
     a = AsyncComm(None, timeout=20, offline=True, offline_address=('localhost',65432))
