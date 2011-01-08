@@ -1,4 +1,4 @@
-__all__ = ["controller"]
+__all__ = ['async_comm', 'controller', 'EPuckError']
 
 class EPuckError(Exception):
     """Base class exception for this library."""
