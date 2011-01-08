@@ -120,6 +120,9 @@ class AsyncComm(threading.Thread):
         # Requests that are older than timeout seconds must be sent again.
         self.timeout = timeout
 
+        # Number to distinguish commands with same code.
+        self.timestamp = 0
+
         self.logger = logging.getLogger('AsyncComm')
 
     def start(self):
@@ -184,7 +187,8 @@ class AsyncComm(threading.Thread):
 
     def send_command(self, command, command_code):
         """Create new request and notify the main loop."""
-        request = RequestHandler(command, command_code)
+        timestamp = (timestamp + 1) % 255
+        request = RequestHandler(command, command_code, timestamp)
         self._enqueue_request(request)
         return request
 

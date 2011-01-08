@@ -213,7 +213,7 @@ int main(void) {
 	while(1) {
 
 		while (e_getchar_uart1(&c)==0);
-		while (e_getchar_uart1(&tmstmp)==0);	
+		e_getchar_uart1(&tmstmp);	
 
 		#ifdef IR_RECIEVER
 		{
@@ -539,7 +539,7 @@ int main(void) {
 					break;
 				}
 				while (e_getchar_uart1(&c)==0); // get next command
-				while (e_getchar_uart1(&tmstmp)==0);
+				e_getchar_uart1(&tmstmp);
 			} while(c);
 
 			if (i!=0){
@@ -555,6 +555,7 @@ int main(void) {
 			while (c=='\n' || c=='\r')
 				 e_getchar_uart1(&c);
 			buffer[0]=c;
+			e_getchar_uart1(&tmstmp);
 			i = 1;
 			do if (e_getchar_uart1(&c)) 
 				buffer[i++]=c;
