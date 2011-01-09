@@ -13,10 +13,7 @@ from epuck.comm import CommError, TestConnection
 
 
 class AsyncCommError(CommError):
-    """
-    An error occured during the asynchronous communication with E-Puck robot.
-
-    """
+    """An error occured during the asynchronous communication."""
     pass
 
 
@@ -27,10 +24,11 @@ class RequestHandler(object):
 
     """
 
-    def __init__(self, command, response_code, timestamp):
+    def __init__(self, command, response_code, timestamp, callback):
         self.command = command
         self.timestamp = timestamp
         self.response_code = response_code
+        self.callback = callback
 
         self.response = None
         self.accomplished = threading.Condition()
@@ -58,7 +56,7 @@ class RequestHandler(object):
 
     def get_response(self):
         """Return the response."""
-        return self.response
+        return self.callback(self.response)
 
     def response_received(self):
         """Return whether a response has been received."""
@@ -162,10 +160,10 @@ class AsyncComm(threading.Thread):
         # Run correct handler.
         command_handlers[command]()
 
-    def send_command(self, command, timestamp, command_code):
+    def send_command(self, command, timestamp, command_code, callback=lambda x: x):
         """Create new request and notify the main loop."""
         self.logger.debug('Sending new command. Command: "%s", code: "%s", timestamp: "%s".' % (command, command_code, timestamp))
-        request = RequestHandler(command, command_code, timestamp)
+        request = RequestHandler(command, command_code, timestamp, callback)
         self._enqueue_request(request)
         return request
 
@@ -193,7 +191,10 @@ class AsyncComm(threading.Thread):
         else:
             response = self._read_text_data().split(',', 1)
             timestamp = int(response[0])
-            response = response[1]
+            try:
+                response = response[1]
+            except IndexError:
+                response = ''
 
         self.logger.debug('Received response. Code: "%s", timestamp: "%s", response: "%s".' % (code, timestamp, response))
 

@@ -8,10 +8,7 @@ from epuck.comm import CommError, TestConnection
 
 
 class SyncCommError(CommError):
-    """
-    An error occured during the synchronous communication with E-Puck robot.
-
-    """
+    """An error occured during the synchronous communication."""
     pass
 
 
@@ -33,7 +30,7 @@ class SyncComm(object):
 
         self.logger = logging.getLogger('SyncComm')
 
-    def send_command(self, command, timestamp, command_code):
+    def send_command(self, command, timestamp, command_code, callback=lambda x:x):
         """Send new command and return the response.
 
         Will block the execution until the robot returns something or timeout
@@ -46,7 +43,7 @@ class SyncComm(object):
 
         response = self._read_response(timestamp, command_code)
 
-        return response
+        return callback(response)
 
     def _read_response(self, timestamp, command_code):
         """Read a response."""
@@ -60,7 +57,10 @@ class SyncComm(object):
         else:
             response = self._read_text_data().split(',', 1)
             ts = int(response[0])
-            response = response[1]
+            try:
+                response = response[1]
+            except IndexError:
+                response = ''
 
         self.logger.debug('Received response. Code: "%s", timestamp: "%s", response: "%s".' % (code, ts, response))
 
