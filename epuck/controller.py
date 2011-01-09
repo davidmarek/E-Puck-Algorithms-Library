@@ -108,6 +108,6 @@ class Controller(object):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
 
-    a = Controller(None, timeout=20, offline=True, offline_address=('localhost',65432))
+    a = Controller(None, asynchronous=True, timeout=20, offline=True, offline_address=('localhost',65432))
     r1 = a.set_motor_speed(100,100)
     r2 = a.get_motor_speed()

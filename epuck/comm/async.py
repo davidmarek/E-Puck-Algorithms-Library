@@ -109,7 +109,7 @@ class AsyncComm(threading.Thread):
 
     def stop(self):
         """Stop the main loop."""
-        os.write(self.interrupt_fd_write, "STOP")
+        os.write(self.interrupt_fd_write, "STOP\n")
 
     def run(self):
         """The main loop of the communication manager.
@@ -151,14 +151,15 @@ class AsyncComm(threading.Thread):
 
         """
         # Read the command.
-        command = os.read(self.interrupt_fd_read, 0xff)
+        commands = os.read(self.interrupt_fd_read, 0xffff).strip().split('\n')
 
         command_handlers = {
             'NEW': self._write_request,
             'STOP': self._stop_main_loop,
         }
         # Run correct handler.
-        command_handlers[command]()
+        for c in commands:
+            command_handlers[c]()
 
     def send_command(self, command, timestamp, command_code, callback=lambda x: x):
         """Create new request and notify the main loop."""
@@ -248,7 +249,7 @@ class AsyncComm(threading.Thread):
 
         """
         old_requests = True
-        while old_requests:
+        while old_requests and not self.response_queue.empty():
             sent_time, request = self.response_queue.get()
             if time.time() - sent_time > self.timeout:
                 self._enqueue_request(request)
@@ -259,7 +260,7 @@ class AsyncComm(threading.Thread):
     def _enqueue_request(self, request):
         "Put the request into the request_queue and notify the main loop."""
         self.request_queue.put(request)
-        os.write(self.interrupt_fd_write, "NEW")
+        os.write(self.interrupt_fd_write, "NEW\n")
 
 
 # Test the module.
