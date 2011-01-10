@@ -191,9 +191,7 @@ class AsyncComm(threading.Thread):
         # Text data
         else:
             response = self._read_text_data().split(',', 1)
-            print response
             timestamp = ord(response[0][0])
-            print timestamp
             try:
                 response = response[1]
             except IndexError:
