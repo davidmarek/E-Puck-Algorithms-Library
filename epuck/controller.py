@@ -73,7 +73,7 @@ class Controller(object):
         try:
             if (-self.MAX_SPEED <= left <= self.MAX_SPEED) \
             and (-self.MAX_SPEED <= right <= self.MAX_SPEED):
-                command = "D%d,%d,%d\r\n" % (self.command_i, left, right)
+                command = "D%c,%d,%d\r\n" % (self.command_i, left, right)
                 ret = self.comm.send_command(command, self.command_i, 'd')
                 return ret
             else:
@@ -99,7 +99,7 @@ class Controller(object):
             except Exception as e:
                 self.logger.error(e)
 
-        command = "E%d\r\n" % self.command_i
+        command = "E%c\r\n" % self.command_i
         ret = self.comm.send_command(command, self.command_i, 'e', _parse_response)
         return ret
 

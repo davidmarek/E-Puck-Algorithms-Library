@@ -191,7 +191,9 @@ class AsyncComm(threading.Thread):
         # Text data
         else:
             response = self._read_text_data().split(',', 1)
-            timestamp = int(response[0])
+            print response
+            timestamp = ord(response[0][0])
+            print timestamp
             try:
                 response = response[1]
             except IndexError:
@@ -224,8 +226,11 @@ class AsyncComm(threading.Thread):
 
     def _save_response(self, code, timestamp, response):
         """Find the right request and give it the response."""
-        request = self._get_request(code, timestamp)
-        request.set_response(response)
+        try:
+            request = self._get_request(code, timestamp)
+            request.set_response(response)
+        except AsyncCommError as e:
+            self.logger.error(e)
 
     def _get_request(self, code, timestamp):
         """Find the right request for given response code."""

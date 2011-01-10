@@ -1,7 +1,7 @@
 /********************************************************************************
 
-			The reference programm to control the e-puck with the PC
-			Version 2.0
+			The reference programm to control the e-puck with the PC      
+			Version 2.0							                          
 			Michael Bonani
 
 
@@ -29,7 +29,7 @@ EPFL Ecole polytechnique federale de Lausanne http://www.epfl.ch
  * \n \n Another exemple is controling the motors. In this case we receive for exemple
  * "d,200,-200+return". Then we put the motor speed left on 200 and motor speed right
  * on -200 and send back "d+return".
- * \warning To compile the programm, you HAVE to compile with a "large data model" option you find in built option project
+ * \warning To compile the programm, you HAVE to compile with a "large data model" option you find in built option project 
  * \n The linker command lign must be -mlarge-data
  * \n or you set the define variable MIC_SAMP_NB in the file library\a_d\advance_ad_scan\e_ad_con.h with 100
  * \n It must look like this: #define MIC_SAMP_NB 100
@@ -46,18 +46,18 @@ EPFL Ecole polytechnique federale de Lausanne http://www.epfl.ch
  * \section sect_run Compiling and running
  * First of all you have to compile the programm.
  * \n \n Flash the programm to the e-puck.
- * \warning To compile the programm, you HAVE to compile with a "large data model" option you find in built option project
- * \n The linker command lign must be -mlarge-data
+ * \warning To compile the programm, you HAVE to compile with a "large data model" option you find in built option project 
+ * \n The linker command lign must be -mlarge-data 
  * \n or you set the define variable MIC_SAMP_NB in the file library\a_d\advance_ad_scan\e_ad_con.h with 100
  * \n It must look like this: #define MIC_SAMP_NB 100
- *
+ * 
  * \section sect_hyperterminal Using sercom with Hyperterminal
  * Pair the e-puck with your computer: this will create a new
  * virtual COM port that you can use to communicate with the e-puck.
  * \n With Hyperterminal, connect to this COM port and play with the e-puck serial protocol. The available commands
  * are listed in this file: http://asl.epfl.ch/epfl/education/courses/MicroInfo2/TP/sercom1.02.pdf . You can also
  * press 'H' + return to see the list of available commands.
- *
+ * 
  * \section link_sec External links
  * - http://www.e-puck.org/                 The official site of the e-puck
  * - https://gna.org/projects/e-puck/       The developpers area at gna
@@ -106,19 +106,19 @@ EPFL Ecole polytechnique federale de Lausanne http://www.epfl.ch
 
 #ifdef FLOOR_SENSORS
 #include <./I2C/e_I2C_protocol.h>
-#endif
+#endif 
 
 #ifdef IR_RECIEVER
 #include <motor_led/advance_one_timer/e_remote_control.h>
 #define SPEED_IR 600
-#endif
+#endif 
 
 #define uart_send_static_text(msg) do { e_send_uart1_char(msg,sizeof(msg)-1); while(e_uart1_sending()); } while(0)
 #define uart_send_text(msg) do { e_send_uart1_char(msg,strlen(msg)); while(e_uart1_sending()); } while(0)
 
 
 static char buffer[40*40*2+3+80];
-
+	
 extern int e_mic_scan[3][MIC_SAMP_NB];
 extern fractcomplex sigCmpx[FFT_BLOCK_LENGTH] __attribute__ ((section (".ydata, data, ymemory"),aligned (FFT_BLOCK_LENGTH * 2 *2)));
 
@@ -135,7 +135,7 @@ int main(void) {
 	char *address;
 	char *ptr;
 #ifdef LIS_SENSORS_TURRET
-	int sensext_pres=1, sensext_param[2], sensext_debug=0;
+	int sensext_pres=1, sensext_param[2], sensext_debug=0; 
 	unsigned int sensext_value[2];
 #endif
 #ifdef IR_RECIEVER
@@ -160,7 +160,7 @@ int main(void) {
 		RCONbits.POR=0;
 		RESET();
 	}
-
+	
 	/*Cam default parameter*/
 	cam_mode=RGB_565_MODE;
 	cam_width=40;
@@ -172,28 +172,28 @@ int main(void) {
     e_po3030k_set_mirror(1,1);
     e_po3030k_write_cam_registers();
 
-#ifdef LIS_SENSORS_TURRET //check if sensor extension is present and initalizes ports accordingly
+#ifdef LIS_SENSORS_TURRET //check if sensor extension is present and initalizes ports accordingly 
 
 	e_i2cp_init();
 	e_i2cp_enable();
 	sensext_debug = e_i2cp_write (I2C_ADDR_SENSEXT , 0, 49);
 	e_i2cp_disable();
-
-	// Wait for I2C eeprom on tourret to answer.
+	
+	// Wait for I2C eeprom on tourret to answer. 
 	e_activate_agenda(e_stop_sensext_wait,0);
-	e_start_sensext_wait();
+	e_start_sensext_wait();									
 	e_set_agenda_cycle(e_stop_sensext_wait, 100);
 	while(e_get_sensext_wait());
 	e_set_agenda_cycle(e_stop_sensext_wait, 0);
-
+	
 	e_i2cp_enable();
 	sensext_debug = e_i2cp_read(I2C_ADDR_SENSEXT, 0);
 	e_i2cp_disable();
-
+	
 	if(sensext_debug!=49) // no SENSORS_TURRET reply
 	{
 		sensext_pres=0;
-
+	
 	}
 	else
 	{
@@ -201,23 +201,23 @@ int main(void) {
 		e_init_sensext();
 		e_init_sharp();						//a executer s'il y a la tourelle
 	//	uart_send_static_text("ePic\r\n");
-	}
+	}	
 #endif
 
-
+    
     e_acc_calibr();
 	e_calibrate_ir();
-
+    
 	e_set_body_led(1);
 
 	while(1) {
 
 		while (e_getchar_uart1(&c)==0);
-		e_getchar_uart1(&tmstmp);
+		e_getchar_uart1(&tmstmp);	
 
 		#ifdef IR_RECIEVER
 		{
-
+			
 			ir_move = e_get_data();
 			ir_address = e_get_address();
 			if (((ir_address ==  0)||(ir_address ==  8))&&(ir_move!=ir_last_move)){
@@ -272,10 +272,10 @@ int main(void) {
 				ir_last_move = ir_move;
 				e_set_speed_left(speedl);
 				e_set_speed_right(speedr);
-            }
-
+				}
+	
 		}
-#else
+#else 
 		;
 #endif
 		if (c<0) { // binary mode (big endian)
@@ -283,7 +283,7 @@ int main(void) {
 			buffer[i++] = c;
 			buffer[i++] = tmstmp;
 			do {
-				switch(-c) {
+				switch(-c) { 
 				case 'Z':
 					while (e_getchar_uart1(&c1)==0);
 					if (c1 == 0) {
@@ -300,7 +300,7 @@ int main(void) {
 					buffer[i++] = 0;
 					buffer[i++] = 0;
 					if (listening && e_ad_is_array_filled()) {
-
+		
 						i = 0;
 						e_blink_led1();
 						e_ad_scan_off();
@@ -316,7 +316,7 @@ int main(void) {
 
 						buffer[i++] = FFT_BLOCK_LENGTH & 0xff;
 						buffer[i++] = FFT_BLOCK_LENGTH >> 8;
-
+			
 						for (j = 0; j < FFT_BLOCK_LENGTH / 2; j++) {
 							e_blink_led2();
 							buffer[i++] = sigCmpx[j].real;
@@ -325,7 +325,7 @@ int main(void) {
 						//e_send_uart1_char(buffer,i); // send answer
 						//while(e_uart1_sending());
 					}
-
+	
 					break;
 				case 'a':  // Read acceleration sensors in a non filtered way, some as ASCII
 					accx=e_get_acc(0);
@@ -352,7 +352,7 @@ int main(void) {
 					buffer[i++]=(*ptr);
 					ptr++;
 					buffer[i++]=(*ptr);
-
+				
 					ptr=(char *)&accelero.orientation;
 					buffer[i++]=(*ptr);
 					ptr++;
@@ -361,7 +361,7 @@ int main(void) {
 					buffer[i++]=(*ptr);
 					ptr++;
 					buffer[i++]=(*ptr);
-
+		
 					ptr=(char *)&accelero.inclination;
 					buffer[i++]=(*ptr);
 					ptr++;
@@ -370,7 +370,7 @@ int main(void) {
 					buffer[i++]=(*ptr);
 					ptr++;
 					buffer[i++]=(*ptr);
-
+				
 					break;
 				case 'D': // set motor speed
 					while (e_getchar_uart1(&c1)==0);
@@ -483,7 +483,7 @@ int main(void) {
 							case -1:	//i2c SRFxxx
 								buffer[i++] = sensext_value[0]&0xff;
 								buffer[i++] = sensext_value[0]>>8;
-
+							
 								buffer[i++] = sensext_value[1]&0xff;
 								buffer[i++] = sensext_value[1]>>8;
 //								sprintf(buffer,"w,%u,%u\r\n", sensext_value[0],  sensext_value[1]);
@@ -491,10 +491,10 @@ int main(void) {
 							case -2:	// i2c cmps03
 								buffer[i++] = sensext_value[0]&0xff;
 								buffer[i++] = sensext_value[0]>>8;
-
+							
 								buffer[i++] = sensext_value[1]&0xff;
 								buffer[i++] = sensext_value[1]>>8;
-//								sprintf(buffer,"w,%d,%d\r\n",  sensext_value[0],  sensext_value[1]);
+//								sprintf(buffer,"w,%d,%d\r\n",  sensext_value[0],  sensext_value[1]);	
 								break;
 							default: //analog (sharp,...)
 								buffer[i++] = (sensext_value[0]&0xff);
@@ -514,7 +514,7 @@ int main(void) {
 								sensext_value[1] = -1;
 								buffer[i++] = sensext_value[0]&0xff;
 								buffer[i++] = sensext_value[0]>>8;
-
+							
 								buffer[i++] = sensext_value[1]&0xff;
 								buffer[i++] = sensext_value[1]>>8;
 								break;
@@ -523,11 +523,11 @@ int main(void) {
 								sensext_value[1] = -1;
 								buffer[i++] = sensext_value[0]&0xff;
 								buffer[i++] = sensext_value[0]>>8;
-								break;
+								break;															
 						}
 //						uart_send_static_text("wrong parameter\r\n");
 					}
-
+				
 				}
 				else
 				{
@@ -550,14 +550,15 @@ int main(void) {
 				e_send_uart1_char(buffer,i); // send answer
 				while(e_uart1_sending());
 			}
-
+			
 		} else if (c>0) { // ascii mode
-			while (c=='\n' || c=='\r')
-				 e_getchar_uart1(&c);
+			while (c=='\n' || c=='\r') {
+				e_getchar_uart1(&c);
+			}
+			while (!e_getchar_uart1(&tmstmp));
 			buffer[0]=c;
-			e_getchar_uart1(&tmstmp);
 			i = 1;
-			do if (e_getchar_uart1(&c))
+			do if (e_getchar_uart1(&c)) 
 				buffer[i++]=c;
 			while (c!='\n' && c!='\r');
 			buffer[i++]='\0';
@@ -567,41 +568,41 @@ int main(void) {
 				accx=e_get_acc(0);
 				accy=e_get_acc(1);
 				accz=e_get_acc(2);
-				sprintf(buffer,"a%d,%d,%d,%d\r\n",tmstmp,accx,accy,accz);
+				sprintf(buffer,"a%c,%d,%d,%d\r\n",tmstmp,accx,accy,accz);				
 				uart_send_text(buffer);
 			/*	accelero=e_read_acc_spheric();
-				sprintf(buffer,"a,%f,%f,%f\r\n",accelero.acceleration,accelero.orientation,accelero.inclination);
+				sprintf(buffer,"a,%f,%f,%f\r\n",accelero.acceleration,accelero.orientation,accelero.inclination);				
 				uart_send_text(buffer);*/
 				break;
 			case 'B': // set body led
 				sscanf(buffer,"B,%d\r",&LED_action);
 			 	e_set_body_led(LED_action);
-				sprintf(buffer,"b%d\r\n",tmstmp);
+				sprintf(buffer,"b%c\r\n",tmstmp);
 				uart_send_text(buffer);
 				break;
 			case 'C': // read selector position
 				selector = SELECTOR0 + 2*SELECTOR1 + 4*SELECTOR2 + 8*SELECTOR3;
-				sprintf(buffer,"c%d,%d\r\n",tmstmp,selector);
+				sprintf(buffer,"c%c,%d\r\n",tmstmp,selector);
 				uart_send_text(buffer);
 				break;
 			case 'D': // set motor speed
 				sscanf(buffer, "D,%d,%d\r", &speedl, &speedr);
 				e_set_speed_left(speedl);
 				e_set_speed_right(speedr);
-				sprintf(buffer, "d%d\r\n", tmstmp);
+				sprintf(buffer, "d%c\r\n", tmstmp);
 				uart_send_text(buffer);
 				break;
 			case 'E': // read motor speed
-				sprintf(buffer,"e%d,%d,%d\r\n",tmstmp,speedl,speedr);
+				sprintf(buffer,"e%c,%d,%d\r\n",tmstmp,speedl,speedr);
 				uart_send_text(buffer);
-				break;
+				break; 
 			case 'F': // set front led
 				sscanf(buffer,"F,%d\r",&LED_action);
 				e_set_front_led(LED_action);
-				sprintf(buffer, "f%d\r\n", tmstmp);
+				sprintf(buffer, "f%c\r\n", tmstmp);
 				uart_send_text(buffer);
 				break;
-#ifdef IR_RECIEVER
+#ifdef IR_RECIEVER				
 			case 'G':
                   sprintf(buffer,"g IR check : 0x%x, address : 0x%x, data : 0x%x\r\n", e_get_check(), e_get_address(), e_get_data());
                   uart_send_text(buffer);
@@ -641,10 +642,10 @@ int main(void) {
 				else
 					uart_send_static_text("\"W,#\"       Sensor extension turret not detected. Function deactivated.");
 #endif
-
+				
 				break;
-			case 'I':
-				sprintf(buffer,"i%d,%d,%d,%d,%d,%d\r\n",tmstmp,cam_mode,cam_width,cam_heigth,cam_zoom,cam_size);
+			case 'I':  
+				sprintf(buffer,"i%c,%d,%d,%d,%d,%d\r\n",tmstmp,cam_mode,cam_width,cam_heigth,cam_zoom,cam_size);
 				uart_send_text(buffer);
 				break;
 			case 'J'://set camera parameter see also cam library
@@ -657,19 +658,19 @@ int main(void) {
 				e_po3030k_config_cam((ARRAY_WIDTH -cam_width*cam_zoom)/2,(ARRAY_HEIGHT-cam_heigth*cam_zoom)/2,cam_width*cam_zoom,cam_heigth*cam_zoom,cam_zoom,cam_zoom,cam_mode);
     			e_po3030k_set_mirror(1,1);
    				e_po3030k_write_cam_registers();
-				sprintf(buffer, "j%d\r\n", tmstmp);
+				sprintf(buffer, "j%c\r\n", tmstmp);
    				uart_send_text(buffer);
    				break;
 			case 'K':  // calibrate proximity sensors
 				uart_send_static_text("k, Starting calibration - Remove any object in sensors range\r\n");
 				e_calibrate_ir();
-				sprintf(buffer, "k%d\r\n", tmstmp);
+				sprintf(buffer, "k%c\r\n", tmstmp);
 				uart_send_text(buffer);
 				break;
 			case 'L': // set led
 				sscanf(buffer,"L,%d,%d\r",&LED_nbr,&LED_action);
 				e_set_led(LED_nbr,LED_action);
-				sprintf(buffer, "l%d\r\n", tmstmp);
+				sprintf(buffer, "l%c\r\n", tmstmp);
 				uart_send_text(buffer);
 				break;
 			case 'M': // read floor sensors (optional)
@@ -677,24 +678,24 @@ int main(void) {
 				e_i2cp_enable();
 				for (i=0; i<6; i++)	buffer[i] = e_i2cp_read(0xC0,i);
 				e_i2cp_disable();
-				sprintf(buffer,"m%d,%d,%d,%d\r\n",tmstmp,
+				sprintf(buffer,"m%c,%d,%d,%d\r\n",tmstmp,
 				(unsigned int)buffer[1] | ((unsigned int)buffer[0] << 8),
 				(unsigned int)buffer[3] | ((unsigned int)buffer[2] << 8),
 				(unsigned int)buffer[5] | ((unsigned int)buffer[4] << 8));
 				uart_send_text(buffer);
 #else
-				sprintf(buffer,"m%d,0,0,0\r\n", tmstmp);
+				sprintf(buffer,"m%c,0,0,0\r\n", tmstmp);
 				uart_send_text(buffer);
 #endif
 				break;
 			case 'N': // read proximity sensors
-				sprintf(buffer,"n%d,%d,%d,%d,%d,%d,%d,%d,%d\r\n",tmstmp,
+				sprintf(buffer,"n%c,%d,%d,%d,%d,%d,%d,%d,%d\r\n",tmstmp,
 				        e_get_calibrated_prox(0),e_get_calibrated_prox(1),e_get_calibrated_prox(2),e_get_calibrated_prox(3),
 				        e_get_calibrated_prox(4),e_get_calibrated_prox(5),e_get_calibrated_prox(6),e_get_calibrated_prox(7));
 				uart_send_text(buffer);
 				break;
 			case 'O': // read ambient light sensors
-				sprintf(buffer,"o%d,%d,%d,%d,%d,%d,%d,%d,%d\r\n",tmstmp,
+				sprintf(buffer,"o%c,%d,%d,%d,%d,%d,%d,%d,%d\r\n",tmstmp,
 				        e_get_ambient_light(0),e_get_ambient_light(1),e_get_ambient_light(2),e_get_ambient_light(3),
 				        e_get_ambient_light(4),e_get_ambient_light(5),e_get_ambient_light(6),e_get_ambient_light(7));
 				uart_send_text(buffer);
@@ -703,15 +704,15 @@ int main(void) {
 				sscanf(buffer,"P,%d,%d\r",&positionl,&positionr);
 				e_set_steps_left(positionl);
 				e_set_steps_right(positionr);
-				sprintf(buffer,"p%d\r\n", tmstmp);
+				sprintf(buffer,"p%c\r\n", tmstmp);
 				uart_send_text(buffer);
 				break;
 			case 'Q': // read motor position
-				sprintf(buffer,"q%d,%d,%d\r\n",tmstmp,e_get_steps_left(),e_get_steps_right());
+				sprintf(buffer,"q%c,%d,%d\r\n",tmstmp,e_get_steps_left(),e_get_steps_right());
 				uart_send_text(buffer);
 				break;
 			case 'R': // reset
-				sprintf(buffer, "r%d\r\n", tmstmp);
+				sprintf(buffer, "r%c\r\n", tmstmp);
 				uart_send_text(buffer);
 				RESET();
 				break;
@@ -719,8 +720,8 @@ int main(void) {
 				e_set_speed_left(0);
 				e_set_speed_right(0);
 				e_set_led(8,0);
-
-				sprintf(buffer, "s%d\r\n", tmstmp);
+				
+				sprintf(buffer, "s%c\r\n", tmstmp);
 				uart_send_text(buffer);
 				break;
 			case 'T': // stop
@@ -740,16 +741,16 @@ int main(void) {
 						e_close_sound();
 						first=0;
 						break;
-				}
-				sprintf(buffer, "t%d\r\n", tmstmp);
+				}		
+				sprintf(buffer, "t%c\r\n", tmstmp);
 				uart_send_text(buffer);
 				break;
 			case 'U':
-				sprintf(buffer,"u%d,%d,%d,%d\r\n",tmstmp,e_get_micro_volume(0),e_get_micro_volume(1),e_get_micro_volume(2));
+				sprintf(buffer,"u%c,%d,%d,%d\r\n",tmstmp,e_get_micro_volume(0),e_get_micro_volume(1),e_get_micro_volume(2));
 				uart_send_text(buffer);
 				break;
 			case 'V': // get version information
-				sprintf(buffer, "v%d, DM Version 0.2 2011\r\n", tmstmp);
+				sprintf(buffer, "v%c, DM Version 0.2 2011\r\n", tmstmp);
 				uart_send_text(buffer);
 				break;
 			case 'W': // read Devantec ultrasonic range sensor or Sharp Ir sensor (optional)
@@ -762,13 +763,13 @@ int main(void) {
 						switch (sensext_param[0])
 						{
 							case -1:	//i2c SRFxxx
-								sprintf(buffer,"w%d,%u,%u\r\n", tmstmp,sensext_value[0],  sensext_value[1]);
+								sprintf(buffer,"w%c,%u,%u\r\n", tmstmp,sensext_value[0],  sensext_value[1]);
 									break;
 							case -2:	// i2c cmps03
-								sprintf(buffer,"w%d,%d,%d\r\n", tmstmp, sensext_value[0],  sensext_value[1]);
+								sprintf(buffer,"w%c,%d,%d\r\n", tmstmp, sensext_value[0],  sensext_value[1]);	
 									break;
 							default: //analog (sharp,...)
-                                sprintf(buffer,"w%d,%d\r\n", tmstmp, sensext_value[0]);
+							sprintf(buffer,"w%c,%d\r\n", tmstmp, sensext_value[0]);
 
 						}
 						uart_send_text(buffer);
@@ -777,7 +778,7 @@ int main(void) {
 					{
 						uart_send_static_text("wrong parameter\r\n");
 					}
-
+				
 				}
 				else
 				{
@@ -800,7 +801,7 @@ int main(void) {
 				uart_send_text(buffer);
 				break;
 			default:
-				sprintf(buffer, "z%d,Command not found\r\n", tmstmp);
+				sprintf(buffer, "z%c,Command not found\r\n", tmstmp);
 				uart_send_text(buffer);
 				break;
 			}

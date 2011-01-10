@@ -56,7 +56,7 @@ class SyncComm(object):
         # Text data
         else:
             response = self._read_text_data().split(',', 1)
-            ts = int(response[0])
+            ts = ord(response[0].strip())
             try:
                 response = response[1]
             except IndexError:
