@@ -67,6 +67,7 @@ class Controller(object):
             return func(self, *args, **kwargs)
         return decorator.decorator(_command, func)
 
+
     @command
     def set_motor_speed(self, left, right):
         """Set the speed of the motors."""
@@ -102,6 +103,130 @@ class Controller(object):
         command = "E%c\r\n" % self.command_i
         ret = self.comm.send_command(command, self.command_i, 'e', _parse_response)
         return ret
+
+
+    @command
+    def set_body_led(self, value):
+        """Set the green body LED's status.
+
+        Arguments:
+            value - boolean, turn the led on.
+
+        """
+        pass
+
+    @command
+    def get_body_led(self):
+        """Get the green body LED's status. """
+        pass
+
+
+    @command
+    def set_front_led(self, value):
+        """Set the bright front LED's status.
+
+        Arguments:
+            value - boolean, turn the led on.
+
+        """
+        pass
+
+    @command
+    def get_front_led(self):
+        """Get the bright front LED's status. """
+        pass
+
+
+    @command
+    def set_led(self, led_no, value):
+        """Set the LED's status.
+
+        There are 8 LEDs on the e-puck robot. The LED number 0 is the frontal
+        one, the LED numbering is increasing clockwise.
+
+        Arguments:
+            led_no - number of the led (0 - 7).
+            value - boolean, turn the led on.
+
+        """
+        pass
+
+    @command
+    def get_led(self, led_no):
+        """Get the LED's status.
+
+        There are 8 LEDs on the e-puck robot. The LED number 0 is the frontal
+        one, the LED numbering is increasing clockwise.
+
+        Arguments:
+            led_no - number of the led (0 - 7).
+
+        """
+        pass
+
+
+    @command
+    def get_turning_switch(self):
+        """Get the position of the rotating 16 positions switch.
+
+        Position 0 correspond to the arrow pointing on the right when looking
+        in the same direction as the robot.
+
+        """
+        pass
+
+
+    @command
+    def get_proximity_sensors(self):
+        """Get the values of the 8 proximity sensors.
+
+        The 12 bit values of the 8 proximity sensors. For left and right side
+        there is one sensor situated 10 degrees from the front, others are 45
+        degrees and 90 degrees from the front. For each side there is also one
+        sensor on the back side.
+
+        The keys for sensor values are following: L10, L45, L90, LB, R10, R45,
+        R90, RB.
+
+        The values are in range [0, 4095].
+
+        """
+        pass
+
+
+    @command
+    def get_ambient_sensors(self):
+        """Get the values of the 8 ambient light sensors.
+
+        The 12 bit values of the 8 ambient light sensors. For left and right
+        side there is one sensor situated 10 degrees from the front, others are
+        45 degrees and 90 degrees from the front. For each side there is also
+        one sensor on the back side.
+
+        The keys for sensor values are following: L10, L45, L90, LB, R10, R45,
+        R90, RB.
+
+        The values are in range [0, 4095].
+
+        """
+        pass
+
+
+    @command
+    def set_camera(self, options):
+        """Set the camera properties."""
+        pass
+
+    @command
+    def get_photo(self):
+        """Take a photo."""
+        pass
+
+
+    @command
+    def reset(self):
+        """Reset the robot."""
+        pass
 
 
 # Test the module.
