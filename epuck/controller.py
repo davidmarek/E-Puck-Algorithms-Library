@@ -33,6 +33,9 @@ class Controller(object):
 
     MAX_SPEED = 1000
 
+    GREYSCALE_MODE = 0
+    RGB565_MODE = 1
+
     def __init__(self, port, asynchronous=False, update=0, **kwargs):
         """Create new controller.
 
@@ -64,23 +67,23 @@ class Controller(object):
     def command(func):
         def _command(func, self, *args, **kwargs):
             self.command_i = (self.command_i + 1) % 255
-            return func(self, *args, **kwargs)
+            try:
+                return func(self, *args, **kwargs)
+            except CommError as e:
+                self.logger.error(e)
         return decorator.decorator(_command, func)
 
 
     @command
     def set_motor_speed(self, left, right):
         """Set the speed of the motors."""
-        try:
-            if (-self.MAX_SPEED <= left <= self.MAX_SPEED) \
-            and (-self.MAX_SPEED <= right <= self.MAX_SPEED):
-                command = "D%c,%d,%d\r\n" % (self.command_i, left, right)
-                ret = self.comm.send_command(command, self.command_i, 'd')
-                return ret
-            else:
-                raise WrongCommand("Speed is out of bounds.")
-        except CommError as e:
-            self.logger.error(e)
+        if (-self.MAX_SPEED <= left <= self.MAX_SPEED) \
+        and (-self.MAX_SPEED <= right <= self.MAX_SPEED):
+            command = "D%c,%d,%d\r\n" % (self.command_i, left, right)
+            ret = self.comm.send_command(command, self.command_i, 'd')
+            return ret
+        else:
+            raise WrongCommand("Speed is out of bounds.")
 
     @command
     def get_motor_speed(self):
@@ -113,12 +116,9 @@ class Controller(object):
             value - boolean, turn the led on.
 
         """
-        pass
-
-    @command
-    def get_body_led(self):
-        """Get the green body LED's status. """
-        pass
+        command = "L%c,8,%d\r\n" % (self.command_i, 1 if value else 0)
+        ret = self.comm.send_command(command, self.command_i, 'l')
+        return ret
 
 
     @command
@@ -129,12 +129,9 @@ class Controller(object):
             value - boolean, turn the led on.
 
         """
-        pass
-
-    @command
-    def get_front_led(self):
-        """Get the bright front LED's status. """
-        pass
+        command = "L%c,9,%d\r\n" % (self.command_i, 1 if value else 0)
+        ret = self.comm.send_command(command, self.command_i, 'l')
+        return ret
 
 
     @command
@@ -149,20 +146,12 @@ class Controller(object):
             value - boolean, turn the led on.
 
         """
-        pass
-
-    @command
-    def get_led(self, led_no):
-        """Get the LED's status.
-
-        There are 8 LEDs on the e-puck robot. The LED number 0 is the frontal
-        one, the LED numbering is increasing clockwise.
-
-        Arguments:
-            led_no - number of the led (0 - 7).
-
-        """
-        pass
+        if (0 <= led_no <= 7):
+            command = "L%c,%d,%d\r\n" % (self.command_i, led_no, 1 if value else 0)
+            ret = self.comm.send_command(command, self.command_i, 'l')
+            return ret
+        else:
+            raise WrongCommand("Led number is out of the bounds.")
 
 
     @command
@@ -173,7 +162,16 @@ class Controller(object):
         in the same direction as the robot.
 
         """
-        pass
+        def _parse_response(response):
+            try:
+                value = response.strip()
+                return int(value)
+            except Exception as e:
+                self.logger.error(e)
+
+        command = "C%c\r\n" % self.command_i
+        ret = self.comm.send_command(command, self.command_i, 'c', _parse_response)
+        return ret
 
 
     @command
@@ -191,7 +189,17 @@ class Controller(object):
         The values are in range [0, 4095].
 
         """
-        pass
+        def _parse_response(response):
+            try:
+                r = map(int, response.split(','))
+                return dict(zip(['R10', 'R45', 'R90', 'RB', 'LB', 'L90', 'L45',
+                                'L10'], r))
+            except ValueError as e:
+                self.logger.error(e)
+
+        command = "N%c\r\n" % self.command_i
+        ret = self.comm.send_command(command, self.command_i, 'n', _parse_response)
+        return ret
 
 
     @command
@@ -209,13 +217,40 @@ class Controller(object):
         The values are in range [0, 4095].
 
         """
-        pass
+        def _parse_response(response):
+            try:
+                r = map(int, response.split(','))
+                return dict(zip(['R10', 'R45', 'R90', 'RB', 'LB', 'L90', 'L45',
+                                'L10'], r))
+            except ValueError as e:
+                self.logger.error(e)
+
+        command = "O%c\r\n" % self.command_i
+        ret = self.comm.send_command(command, self.command_i, 'o', _parse_response)
+        return ret
 
 
     @command
-    def set_camera(self, options):
-        """Set the camera properties."""
-        pass
+    def set_camera(self, mode, width, height, zoom):
+        """Set the camera properties.
+
+        If the common denominator of zoom factor is 4 or 2, part of the
+        subsampling is done by the camera ( QQVGA = 4, QVGA = 2 ). This
+        increase the framerate by respectively 4 or 2. Moreover greyscale is
+        twice faster than color mode.
+
+        Arguments:
+            mode - GREYSCALE_MODE or RGB565_MODE
+            width - image width
+            height - image height
+            zoom - zoom factor
+        """
+        if 0 < width < 640 and 0 < height < 480 and mode in (GREYSCALE_MODE, RGB565_MODE):
+            command = "J%c,%d,%d,%d,%d\r\n" % (self.command_i, mode, width, height, zoom)
+            ret = self.comm.send_command(command, self.command_i, 'j')
+            return ret
+        else:
+            raise WrongCommand("Wrong camera properties.")
 
     @command
     def get_photo(self):
@@ -226,7 +261,9 @@ class Controller(object):
     @command
     def reset(self):
         """Reset the robot."""
-        pass
+        command = "R%c\r\n" % self.command_i
+        ret = self.comm.send_command(command, self.command_i, 'r')
+        return ret
 
 
 # Test the module.
