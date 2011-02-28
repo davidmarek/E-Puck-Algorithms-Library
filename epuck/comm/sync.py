@@ -41,7 +41,9 @@ class SyncComm(object):
 
         self.serial_connection.write(command)
 
-        response = self._read_response(timestamp, command_code)
+        response = None
+        while response is None:
+            response = self._read_response(timestamp, command_code)
 
         return callback(response)
 
@@ -51,12 +53,12 @@ class SyncComm(object):
 
         # Binary data
         if ord(code) >= 127:
-            ts = self.serial_connection.read(1)
+            ts = ord(self.serial_connection.read(1))
             response = self._read_binary_data()
         # Text data
         else:
-            response = self._read_text_data().split(',', 1)
-            ts = ord(response[0].strip())
+            ts = ord(self.serial_connection.read(1))
+            response = self._read_text_data().split(",", 1)
             try:
                 response = response[1]
             except IndexError:
@@ -67,7 +69,7 @@ class SyncComm(object):
         if ts == timestamp and command_code == code:
             return response
         else:
-            raise SyncComm("Wrong response.")
+            return None
 
     def _read_binary_data(self):
         """Read binary data from the robot.
