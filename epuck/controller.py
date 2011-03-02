@@ -3,6 +3,7 @@
 
 import decorator
 import logging
+import string
 
 from comm.async import AsyncComm
 from comm.sync import SyncComm
@@ -55,7 +56,8 @@ class Controller(object):
             self.comm = SyncComm(port, **kwargs)
 
         self.update_every = update
-        self.command_i = 0
+        self.command_index = 0
+        self.command_i = string.printable[0]
 
         self.motor_speed = [0, 0]
         self.body_led = False
@@ -66,7 +68,8 @@ class Controller(object):
 
     def command(func):
         def _command(func, self, *args, **kwargs):
-            self.command_i = (self.command_i + 1) % 255
+            self.command_index = (self.command_index + 1) % len(string.ascii_letters)
+            self.command_i = ord(string.ascii_letters[self.command_index])
             try:
                 return func(self, *args, **kwargs)
             except CommError as e:
