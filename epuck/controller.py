@@ -119,8 +119,8 @@ class Controller(object):
             value - boolean, turn the led on.
 
         """
-        command = "L%c,8,%d\r\n" % (self.command_i, 1 if value else 0)
-        ret = self.comm.send_command(command, self.command_i, 'l')
+        command = "B%c,%d\r\n" % (self.command_i, 1 if value else 0)
+        ret = self.comm.send_command(command, self.command_i, 'b')
         return ret
 
 
@@ -130,6 +130,19 @@ class Controller(object):
 
         Arguments:
             value - boolean, turn the led on.
+
+        """
+        command = "F%c,%d\r\n" % (self.command_i, 1 if value else 0)
+        ret = self.comm.send_command(command, self.command_i, 'f')
+        return ret
+
+
+    @command
+    def set_leds(self, value):
+        """Set the all LEDs with one command.
+
+        Arguments:
+            value - boolean, turn the leds on.
 
         """
         command = "L%c,9,%d\r\n" % (self.command_i, 1 if value else 0)
