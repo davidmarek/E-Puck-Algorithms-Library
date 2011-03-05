@@ -78,7 +78,7 @@ class Controller(object):
 
 
     @command
-    def set_motor_speed(self, left, right):
+    def set_speed(self, left, right):
         """Set the speed of the motors."""
         if (-self.MAX_SPEED <= left <= self.MAX_SPEED) \
         and (-self.MAX_SPEED <= right <= self.MAX_SPEED):
@@ -89,7 +89,7 @@ class Controller(object):
             raise WrongCommand("Speed is out of bounds.")
 
     @command
-    def get_motor_speed(self):
+    def get_speed(self):
         """Get speed of motors.
 
         The speed is measured in pulses per second, one pulse is
@@ -269,9 +269,34 @@ class Controller(object):
             raise WrongCommand("Wrong camera properties.")
 
     @command
+    def get_camera(self):
+        """Get the camera properties.
+
+        Returns a dictionary with camera properties. The properites are:
+            mode - GREYSCALE_MODE or RGB565_MODE
+            width - image width
+            height - image height
+            zoom - zoom factor
+
+        """
+        def _parse_response(response):
+            try:
+                r = map(int, response.strip().split(','))
+                return dict(zip(['mode', 'width', 'height', 'zoom'], r))
+            except ValueError as e:
+                self.logger.error(e)
+
+        command = "I%c\r\n" % self.command_i
+        ret = self.comm.send_command(command, self.command_i, 'i', _parse_response)
+        return ret
+
+    @command
     def get_photo(self):
         """Take a photo."""
-        pass
+        c = chr(256 - ord("I"))
+        command = "%c%c%c" % (c, self.command_i, chr(0))
+        ret = self.comm.send_command(command, self.command_i, c)
+        return ret
 
 
     @command
@@ -279,6 +304,43 @@ class Controller(object):
         """Reset the robot."""
         command = "R%c\r\n" % self.command_i
         ret = self.comm.send_command(command, self.command_i, 'r')
+        return ret
+
+
+    @command
+    def set_motor_pos(self, left, right):
+        """Set motor position.
+
+        The robot has two step motors. It is possible to set initial positions
+        of the motors (two numbers) and then every step of the motor increase
+        or decrease the position.
+
+        Note: This command doesn't alter the position of motors.
+
+        Arguments:
+            left - position of left motor
+            right - position of right motor
+
+        """
+        command = "P%c,%d,%d\r\n" % (self.command_i, left, right)
+        ret = self.comm.send_command(command, self.command_i, 'p')
+        return ret
+
+    @command
+    def get_motor_pos(self):
+        """Read motor position.
+
+        Returns two values, position of left and right motor.
+        """
+        def _parse_response(response):
+            try:
+                r = map(int, response.strip().split(','))
+                return r
+            except ValueError as e:
+                self.logger.error(e)
+
+        command = "Q%c\r\n" % (self.command_i)
+        ret = self.comm.send_command(command, self.command_i, 'q', _parse_response)
         return ret
 
 
