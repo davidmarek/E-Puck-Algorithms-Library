@@ -280,6 +280,7 @@ int main(void) {
 		;
 #endif
 		if (c<0) { // binary mode (big endian)
+			while (c == '\n' || c == '\r') e_getchar_uart1(&c);
             while (e_getchar_uart1(&tmstmp) == 0);
 			i=0;
 			buffer[i++] = c;
@@ -560,14 +561,15 @@ int main(void) {
 
 			buffer[0]=c;
 			i = 0;
-			do if (e_getchar_uart1(&c))
-				if (i == 0) {
-					tmstmp = c;
-					i++;
-				} else {
-					buffer[i++]=c;
-				}
-			while (c!='\n' && c!='\r');
+			do {
+				if (e_getchar_uart1(&c))
+					if (i == 0) {
+						tmstmp = c;
+						i++;
+					} else {
+						buffer[i++]=c;
+					}
+			} while (c!='\n' && c!='\r');
 			buffer[i++]='\0';
 			buffer[0]=toupper(buffer[0]); // we also accept lowercase letters
 
