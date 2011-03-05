@@ -79,7 +79,7 @@ class SyncComm(object):
 
         """
         lo, hi = self.serial_connection.read(2)
-        size = ord(hi) << 8 + ord(lo)
+        size = (ord(hi) << 8) + ord(lo)
         data = self.serial_connection.read(size)
         return data
 
