@@ -77,24 +77,21 @@ EPFL Ecole polytechnique federale de Lausanne http://www.epfl.ch
 #include <ctype.h>
 #include <stdio.h>
 
-#include <e_init_port.h>
-#include <e_ad_conv.h>
 #include <dsp.h>
-#include <e_fft.h>
-#include <e_fft_utilities.h>
-
+#include <fft/e_fft.h>
+#include <fft/e_fft_utilities.h>
 #include <motor_led/e_epuck_ports.h>
 #include <motor_led/e_init_port.h>
 #include <motor_led/advance_one_timer/e_led.h>
 #include <motor_led/advance_one_timer/e_motors.h>
 
 #include <uart/e_uart_char.h>
+#include <a_d/advance_ad_scan/e_ad_conv.h>
 #include <a_d/advance_ad_scan/e_acc.h>
 #include <a_d/advance_ad_scan/e_prox.h>
-#include <a_d/advance_ad_scan/e_ad_conv.h>
 #include <a_d/advance_ad_scan/e_micro.h>
 #include <motor_led/advance_one_timer/e_agenda.h>
-#include <camera/fast_2_timer/e_po3030k.h>
+#include <camera/fast_2_timer/e_poxxxx.h>
 #include <codec/e_sound.h>
 
 #ifdef LIS_SENSORS_TURRET
@@ -168,10 +165,10 @@ int main(void) {
 	cam_heigth=40;
 	cam_zoom=8;
 	cam_size=cam_width*cam_heigth*2;
-	e_po3030k_init_cam();
-	e_po3030k_config_cam((ARRAY_WIDTH -cam_width*cam_zoom)/2,(ARRAY_HEIGHT-cam_heigth*cam_zoom)/2,cam_width*cam_zoom,cam_heigth*cam_zoom,cam_zoom,cam_zoom,cam_mode);
-    e_po3030k_set_mirror(1,1);
-    e_po3030k_write_cam_registers();
+	e_poxxxx_init_cam();
+	e_poxxxx_config_cam((ARRAY_WIDTH -cam_width*cam_zoom)/2,(ARRAY_HEIGHT-cam_heigth*cam_zoom)/2,cam_width*cam_zoom,cam_heigth*cam_zoom,cam_zoom,cam_zoom,cam_mode);
+    e_poxxxx_set_mirror(1,1);
+    e_poxxxx_write_cam_registers();
 
 #ifdef LIS_SENSORS_TURRET //check if sensor extension is present and initalizes ports accordingly
 
@@ -207,15 +204,14 @@ int main(void) {
 
 
     e_acc_calibr();
-	e_set_body_led(1);
 	e_calibrate_ir();
 
-	e_set_body_led(0);
-
+//	uart_send_static_text("\f\a"
+//	                      "WELCOME to the SerCom protocol on e-Puck\r\n"
+//	                      "the EPFL education robot type \"H\" for help\r\n");
 	while(1) {
 
-		while (e_getchar_uart1(&c)==0);
-
+		while (e_getchar_uart1(&c)==0)
 		#ifdef IR_RECIEVER
 		{
 
@@ -394,7 +390,7 @@ int main(void) {
 
 					break;
 				case 'I': // get camera image
-					e_po3030k_launch_capture(&buffer[i+3]);
+					e_poxxxx_launch_capture(&buffer[i+3]);
 					wait_cam=1;
 					int size = cam_size + 1;
 					buffer[i++]=(char)(size & 0xff);
@@ -407,15 +403,15 @@ int main(void) {
 					while (e_getchar_uart1(&c2)==0);
 					switch(c1) {
 					case 8:
-						e_set_body_led(c2);
-						break;
+					    e_set_body_led(c2);
+					    break;
 					case 9:
-						e_set_front_led(c2);
-						break;
+					    e_set_front_led(c2);
+                        break;
 					default:
-           				e_set_led(c1,c2);
-            			break;
-          			}
+                        e_set_led(c1,c2);
+                        break;
+                    }
 					break;
 				case 'M': // optional floor sensors
 #ifdef FLOOR_SENSORS
@@ -543,37 +539,35 @@ int main(void) {
 					break;
 				}
 				while (e_getchar_uart1(&c)==0); // get next command
-				//e_getchar_uart1(&tmstmp);
 			} while(c < 0);
 
 			if (i!=0){
 				if (wait_cam) {
 					wait_cam=0;
-					while(!e_po3030k_is_img_ready());
+					while(!e_poxxxx_is_img_ready());
 				}
 				e_send_uart1_char(buffer,i); // send answer
 				while(e_uart1_sending());
 			}
 
 		} else if (c>0) { // ascii mode
-            while (c=='\n' || c=='\r') {
-                e_getchar_uart1(&c);
+			while (c=='\n' || c=='\r') {
+				 e_getchar_uart1(&c);
             }
 
 			buffer[0]=c;
 			i = 0;
 			do {
-				if (e_getchar_uart1(&c))
+                if (e_getchar_uart1(&c))
 					if (i == 0) {
 						tmstmp = c;
 						i++;
 					} else {
 						buffer[i++]=c;
 					}
-			} while (c!='\n' && c!='\r');
+            } while (c!='\n' && c!='\r');
 			buffer[i++]='\0';
 			buffer[0]=toupper(buffer[0]); // we also accept lowercase letters
-
 			switch (buffer[0]) {
 			case 'A': // read accelerometer
 				accx=e_get_acc(0);
@@ -582,7 +576,7 @@ int main(void) {
 				sprintf(buffer,"a%c,%d,%d,%d\r\n",tmstmp,accx,accy,accz);
 				uart_send_text(buffer);
 			/*	accelero=e_read_acc_spheric();
-				sprintf(buffer,"a,%f,%f,%f\r\n",accelero.acceleration,accelero.orientation,accelero.inclination);
+				sprintf(buffer,"a,%f,%f,%f\r\n",accelero.acceleration,accelero.orientation,accelero.inclination);				
 				uart_send_text(buffer);*/
 				break;
 			case 'B': // set body led
@@ -664,11 +658,11 @@ int main(void) {
 				if(cam_mode==GREY_SCALE_MODE)
 					cam_size=cam_width*cam_heigth;
 				else
-				    cam_size=cam_width*cam_heigth*2;
-				e_po3030k_init_cam();
-				e_po3030k_config_cam((ARRAY_WIDTH -cam_width*cam_zoom)/2,(ARRAY_HEIGHT-cam_heigth*cam_zoom)/2,cam_width*cam_zoom,cam_heigth*cam_zoom,cam_zoom,cam_zoom,cam_mode);
-    			e_po3030k_set_mirror(1,1);
-   				e_po3030k_write_cam_registers();
+                    cam_size=cam_width*cam_heigth*2;
+				e_poxxxx_init_cam();
+				e_poxxxx_config_cam((ARRAY_WIDTH -cam_width*cam_zoom)/2,(ARRAY_HEIGHT-cam_heigth*cam_zoom)/2,cam_width*cam_zoom,cam_heigth*cam_zoom,cam_zoom,cam_zoom,cam_mode);
+    			e_poxxxx_set_mirror(1,1);
+   				e_poxxxx_write_cam_registers();
 				sprintf(buffer, "j%c\r\n", tmstmp);
    				uart_send_text(buffer);
    				break;
