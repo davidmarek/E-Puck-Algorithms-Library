@@ -6,6 +6,7 @@ import Image
 import logging
 import random
 import string
+import struct
 
 from comm.async import AsyncComm
 from comm.sync import SyncComm
@@ -263,7 +264,7 @@ class Controller(object):
             height - image height
             zoom - zoom factor
         """
-        if 0 < width < 640 and 0 < height < 480 and mode in (GREYSCALE_MODE, RGB565_MODE):
+        if 0 < width <= 640 and 0 < height <= 480 and mode in (self.GREYSCALE_MODE, self.RGB565_MODE):
             command = "J%c,%d,%d,%d,%d\n" % (self.command_i, mode, width, height, zoom)
             ret = self.comm.send_command(command, self.command_i, 'j')
             return ret
@@ -296,11 +297,25 @@ class Controller(object):
     def get_photo(self):
         """Take a photo."""
         def _parse_response(response):
-            mode = response[0]
-            image = response[1:]
-            with open('image', 'w') as f:
-                f.write(image)
-            return Image.fromstring('RGB', (40,40), image, 'raw', 'BGR;16')
+            mode = ord(response[0])
+            width = ord(response[1]) + (ord(response[2]) << 8);
+            height = ord(response[3]) + (ord(response[4]) << 8);
+            image = response[5:]
+            print "%dx%d" % (width, height)
+
+            if mode == self.RGB565_MODE:
+                ret = ""
+                data_struct = "<BBB"
+
+                for (hi, lo) in zip(image[0::2], image[1::2]):
+                    val = (ord(hi) << 8) + ord(lo)
+                    r = int(((val >> 11) & 31) / 31. * 255)
+                    g = int(((val >> 5) & 63) / 63. * 255)
+                    b = int((val & 31) / 31. * 255)
+                    ret += struct.pack(data_struct, b, g, r)
+                return Image.fromstring('RGB', (width, height), ret).rotate(90)
+            elif mode == self.GREYSCALE_MODE:
+                return Image.fromstring('L', (width, height), image).rotate(90)
 
         c = chr(256 - ord("I"))
         command = "%c%c%c" % (c, self.command_i, chr(0))

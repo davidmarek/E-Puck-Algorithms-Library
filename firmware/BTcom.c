@@ -391,12 +391,16 @@ int main(void) {
 
                         break;
                     case 'I': // get camera image
-                        e_poxxxx_launch_capture(&buffer[i+3]);
+                        e_poxxxx_launch_capture(&buffer[i+7]);
                         wait_cam=1;
-                        int size = cam_size + 1;
-                        buffer[i++]=(char)(size & 0xff);
-                        buffer[i++]=(char)(size >> 8);
-                        buffer[i++]=(char)cam_mode&0xff;//send image parameter
+                        int size = cam_size + 5;
+                        buffer[i++] = (char)(size & 0xff);
+                        buffer[i++] = (char)(size >> 8);
+                        buffer[i++] = (char)cam_mode&0xff;//send image parameter
+                        buffer[i++] = cam_width & 0xff;
+                        buffer[i++] = cam_width >> 8;
+                        buffer[i++] = cam_heigth & 0xff;
+                        buffer[i++] = cam_heigth >> 8;
                         i+=cam_size;
                         break;
                     case 'L': // set LED
