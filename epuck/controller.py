@@ -309,9 +309,9 @@ class Controller(object):
 
                 for (hi, lo) in zip(image[0::2], image[1::2]):
                     val = (ord(hi) << 8) + ord(lo)
-                    r = int(((val >> 11) & 31) / 31. * 255)
+                    b = int(((val >> 11) & 31) / 31. * 255)
                     g = int(((val >> 5) & 63) / 63. * 255)
-                    b = int((val & 31) / 31. * 255)
+                    r = int((val & 31) / 31. * 255)
                     ret += struct.pack(data_struct, b, g, r)
                 return Image.fromstring('RGB', (width, height), ret).rotate(90)
             elif mode == self.GREYSCALE_MODE:
