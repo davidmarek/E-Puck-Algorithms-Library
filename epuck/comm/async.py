@@ -64,7 +64,9 @@ class RequestHandler(object):
 
     def join(self):
         """Wait until the response is received."""
+        self.accomplished.acquire()
         self.accomplished.wait()
+        self.accomplished.release()
 
 
 class AsyncComm(threading.Thread):
@@ -76,7 +78,7 @@ class AsyncComm(threading.Thread):
 
     """
 
-    def __init__(self, port, timeout=0.2, offline=False, offline_address=None, **kwargs):
+    def __init__(self, port, timeout=0.1, offline=False, offline_address=None, **kwargs):
         threading.Thread.__init__(self)
         self.setDaemon(True)
 
@@ -126,7 +128,6 @@ class AsyncComm(threading.Thread):
 
             if len(input_sockets) == 0:
                 # Timeout was reached. Check the requests.
-                self.logger.debug('Timeout expired.')
                 self._check_requests_timeout()
 
             for i in input_sockets:
