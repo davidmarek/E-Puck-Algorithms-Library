@@ -125,7 +125,7 @@ extern unsigned int e_last_mic_scan_id;
 
 /* \brief The main function of the programm */
 int main(void) {
-	char c,c1,c2,wait_cam=0,tmstmp;
+	char c,c1,c2,wait_cam=0,tmstmp, last_tmstmp;
 	int	i,j,n,speedr,speedl,positionr,positionl,LED_nbr,LED_action,accx,accy,accz,selector,sound;
 	int cam_mode,cam_width,cam_heigth,cam_zoom,cam_size;
 	int listening = 0;
@@ -282,263 +282,266 @@ int main(void) {
 			buffer[i++] = c;
 			buffer[i++] = tmstmp;
 			do {
-				switch(-c) {
-				case 'Z':
-					while (e_getchar_uart1(&c1)==0);
-					if (c1 == 0) {
-						e_ad_scan_off();
-						listening = 0;
-						e_blink_led6();
-					} else {
-						e_ad_scan_on();
-						listening = 1;
-						e_blink_led6();
-					}
-					break;
-				case 'z':
-					buffer[i++] = 0;
-					buffer[i++] = 0;
-					if (listening && e_ad_is_array_filled()) {
-
-						i = 0;
-						e_blink_led1();
-						e_ad_scan_off();
-						// Set the mean of the microphone data to zero
-						e_subtract_mean(e_mic_scan[0], FFT_BLOCK_LENGTH, LOG2_BLOCK_LENGTH);
-						// Copy microphone data to the FFT array for processing
-						e_fast_copy(e_mic_scan[0], (int*)sigCmpx, FFT_BLOCK_LENGTH);
-
-						e_ad_scan_on();
-
-						// Perform FFT and leave result in sigCmpx
-						e_doFFT_asm(sigCmpx);
-
-						buffer[i++] = FFT_BLOCK_LENGTH & 0xff;
-						buffer[i++] = FFT_BLOCK_LENGTH >> 8;
-
-						for (j = 0; j < FFT_BLOCK_LENGTH / 2; j++) {
-							e_blink_led2();
-							buffer[i++] = sigCmpx[j].real;
-							buffer[i++] = sigCmpx[j].imag;
-						}
-						//e_send_uart1_char(buffer,i); // send answer
-						//while(e_uart1_sending());
-					}
-
-					break;
-				case 'a':  // Read acceleration sensors in a non filtered way, some as ASCII
-					accx=e_get_acc(0);
-					accy=e_get_acc(1);
-					accz=e_get_acc(2);
-					ptr=(char *)&accx;
-					buffer[i++]=accx & 0xff;
-					buffer[i++]=accx>>8;
-
-					buffer[i++]=accy & 0xff;
-					buffer[i++]=accy>>8;
-
-					buffer[i++]=accz & 0xff;
-					buffer[i++]=accz>>8;
-
-					break;
-				case 'A': // read acceleration sensors
-					accelero=e_read_acc_spheric();
-					ptr=(char *)&accelero.acceleration;
-					buffer[i++]=(*ptr);
-					ptr++;
-					buffer[i++]=(*ptr);
-					ptr++;
-					buffer[i++]=(*ptr);
-					ptr++;
-					buffer[i++]=(*ptr);
-
-					ptr=(char *)&accelero.orientation;
-					buffer[i++]=(*ptr);
-					ptr++;
-					buffer[i++]=(*ptr);
-					ptr++;
-					buffer[i++]=(*ptr);
-					ptr++;
-					buffer[i++]=(*ptr);
-
-					ptr=(char *)&accelero.inclination;
-					buffer[i++]=(*ptr);
-					ptr++;
-					buffer[i++]=(*ptr);
-					ptr++;
-					buffer[i++]=(*ptr);
-					ptr++;
-					buffer[i++]=(*ptr);
-
-					break;
-				case 'D': // set motor speed
-					while (e_getchar_uart1(&c1)==0);
-					while (e_getchar_uart1(&c2)==0);
-					speedl=(unsigned char)c1+((unsigned int)c2<<8);
-					while (e_getchar_uart1(&c1)==0);
-					while (e_getchar_uart1(&c2)==0);
-					speedr=(unsigned char)c1+((unsigned  int)c2<<8);
-					e_set_speed_left(speedl);
-					e_set_speed_right(speedr);
-					break;
-				case 'E': // get motor speed
-					buffer[i++]=speedl & 0xff;
-					buffer[i++]=speedl >> 8;
-
-					buffer[i++]=speedr & 0xff;
-					buffer[i++]=speedr >> 8;
-
-					break;
-				case 'I': // get camera image
-					e_poxxxx_launch_capture(&buffer[i+3]);
-					wait_cam=1;
-					int size = cam_size + 1;
-					buffer[i++]=(char)(size & 0xff);
-					buffer[i++]=(char)(size >> 8);
-					buffer[i++]=(char)cam_mode&0xff;//send image parameter
-					i+=cam_size;
-					break;
-				case 'L': // set LED
-					while (e_getchar_uart1(&c1)==0);
-					while (e_getchar_uart1(&c2)==0);
-					switch(c1) {
-					case 8:
-					    e_set_body_led(c2);
-					    break;
-					case 9:
-					    e_set_front_led(c2);
+                if (last_tmstmp != tmstmp) {
+                    switch(-c) {
+                    case 'Z':
+                        while (e_getchar_uart1(&c1)==0);
+                        if (c1 == 0) {
+                            e_ad_scan_off();
+                            listening = 0;
+                            e_blink_led6();
+                        } else {
+                            e_ad_scan_on();
+                            listening = 1;
+                            e_blink_led6();
+                        }
                         break;
-					default:
-                        e_set_led(c1,c2);
+                    case 'z':
+                        buffer[i++] = 0;
+                        buffer[i++] = 0;
+                        if (listening && e_ad_is_array_filled()) {
+
+                            i = 0;
+                            e_blink_led1();
+                            e_ad_scan_off();
+                            // Set the mean of the microphone data to zero
+                            e_subtract_mean(e_mic_scan[0], FFT_BLOCK_LENGTH, LOG2_BLOCK_LENGTH);
+                            // Copy microphone data to the FFT array for processing
+                            e_fast_copy(e_mic_scan[0], (int*)sigCmpx, FFT_BLOCK_LENGTH);
+
+                            e_ad_scan_on();
+
+                            // Perform FFT and leave result in sigCmpx
+                            e_doFFT_asm(sigCmpx);
+
+                            buffer[i++] = FFT_BLOCK_LENGTH & 0xff;
+                            buffer[i++] = FFT_BLOCK_LENGTH >> 8;
+
+                            for (j = 0; j < FFT_BLOCK_LENGTH / 2; j++) {
+                                e_blink_led2();
+                                buffer[i++] = sigCmpx[j].real;
+                                buffer[i++] = sigCmpx[j].imag;
+                            }
+                            //e_send_uart1_char(buffer,i); // send answer
+                            //while(e_uart1_sending());
+                        }
+
+                        break;
+                    case 'a':  // Read acceleration sensors in a non filtered way, some as ASCII
+                        accx=e_get_acc(0);
+                        accy=e_get_acc(1);
+                        accz=e_get_acc(2);
+                        ptr=(char *)&accx;
+                        buffer[i++]=accx & 0xff;
+                        buffer[i++]=accx>>8;
+
+                        buffer[i++]=accy & 0xff;
+                        buffer[i++]=accy>>8;
+
+                        buffer[i++]=accz & 0xff;
+                        buffer[i++]=accz>>8;
+
+                        break;
+                    case 'A': // read acceleration sensors
+                        accelero=e_read_acc_spheric();
+                        ptr=(char *)&accelero.acceleration;
+                        buffer[i++]=(*ptr);
+                        ptr++;
+                        buffer[i++]=(*ptr);
+                        ptr++;
+                        buffer[i++]=(*ptr);
+                        ptr++;
+                        buffer[i++]=(*ptr);
+
+                        ptr=(char *)&accelero.orientation;
+                        buffer[i++]=(*ptr);
+                        ptr++;
+                        buffer[i++]=(*ptr);
+                        ptr++;
+                        buffer[i++]=(*ptr);
+                        ptr++;
+                        buffer[i++]=(*ptr);
+
+                        ptr=(char *)&accelero.inclination;
+                        buffer[i++]=(*ptr);
+                        ptr++;
+                        buffer[i++]=(*ptr);
+                        ptr++;
+                        buffer[i++]=(*ptr);
+                        ptr++;
+                        buffer[i++]=(*ptr);
+
+                        break;
+                    case 'D': // set motor speed
+                        while (e_getchar_uart1(&c1)==0);
+                        while (e_getchar_uart1(&c2)==0);
+                        speedl=(unsigned char)c1+((unsigned int)c2<<8);
+                        while (e_getchar_uart1(&c1)==0);
+                        while (e_getchar_uart1(&c2)==0);
+                        speedr=(unsigned char)c1+((unsigned  int)c2<<8);
+                        e_set_speed_left(speedl);
+                        e_set_speed_right(speedr);
+                        break;
+                    case 'E': // get motor speed
+                        buffer[i++]=speedl & 0xff;
+                        buffer[i++]=speedl >> 8;
+
+                        buffer[i++]=speedr & 0xff;
+                        buffer[i++]=speedr >> 8;
+
+                        break;
+                    case 'I': // get camera image
+                        e_poxxxx_launch_capture(&buffer[i+3]);
+                        wait_cam=1;
+                        int size = cam_size + 1;
+                        buffer[i++]=(char)(size & 0xff);
+                        buffer[i++]=(char)(size >> 8);
+                        buffer[i++]=(char)cam_mode&0xff;//send image parameter
+                        i+=cam_size;
+                        break;
+                    case 'L': // set LED
+                        while (e_getchar_uart1(&c1)==0);
+                        while (e_getchar_uart1(&c2)==0);
+                        switch(c1) {
+                        case 8:
+                            e_set_body_led(c2);
+                            break;
+                        case 9:
+                            e_set_front_led(c2);
+                            break;
+                        default:
+                            e_set_led(c1,c2);
+                            break;
+                        }
+                        break;
+                    case 'M': // optional floor sensors
+#ifdef FLOOR_SENSORS
+                        e_i2cp_enable();
+
+                        for (j=0; j<3; ++j) {
+                            buffer[i++] = e_i2cp_read(0xC0,2*j+1);
+                            buffer[i++] = e_i2cp_read(0xC0,2*j);
+                        }
+
+                        e_i2cp_disable();
+#else
+                        for(j=0;j<6;j++) buffer[i++]=0;
+#endif
+                        break;
+                    case 'N': // read proximity sensors
+                        for(j=0;j<8;j++) {
+                            n=e_get_calibrated_prox(j);
+                            buffer[i++]=n&0xff;
+                            buffer[i++]=n>>8;
+                        }
+                        break;
+                    case 'O': // read light sensors
+                        for(j=0;j<8;j++) {
+                            n=e_get_ambient_light(j);
+                            buffer[i++]=n&0xff;
+                            buffer[i++]=n>>8;
+                        }
+                        break;
+                    case 'Q': // read encoders
+                        n=e_get_steps_left();
+                        buffer[i++]=n&0xff;
+                        buffer[i++]=n>>8;
+                        n=e_get_steps_right();
+                        buffer[i++]=n&0xff;
+                        buffer[i++]=n>>8;
+                        break;
+                    case 'u': // get last micro volumes
+                        n=e_get_micro_volume(0);
+                        buffer[i++]=n&0xff;
+                        buffer[i++]=n>>8;
+
+                        n=e_get_micro_volume(1);
+                        buffer[i++]=n&0xff;
+                        buffer[i++]=n>>8;
+
+                        n=e_get_micro_volume(2);
+                        buffer[i++]=n&0xff;
+                        buffer[i++]=n>>8;
+                        break;
+                    case 'U': // get micro buffer
+                        address=(char *)e_mic_scan;
+                        e_send_uart1_char(address,600);//send sound buffer
+                        n=e_last_mic_scan_id;//send last scan
+                        buffer[i++]=n&0xff;
+                        break;
+                case 'W': // read Devantec ultrasonic range sensor or Sharp Ir sensor (optional)
+#ifdef LIS_SENSORS_TURRET
+                        while (e_getchar_uart1(&c1)==0);
+                        while (e_getchar_uart1(&c2)==0);
+                        sensext_param[0] = (unsigned char)c1+((unsigned int)c2<<8);
+    //			sscanf(buffer,"W,%d\r",&sensext_param[0]);
+                    if (sensext_pres)				// If the TP_sensors tourret is present
+                    {
+                        if(e_sensext_process(sensext_param, sensext_value))
+                        {
+                            switch (sensext_param[0])
+                            {
+                                case -1:	//i2c SRFxxx
+                                    buffer[i++] = sensext_value[0]&0xff;
+                                    buffer[i++] = sensext_value[0]>>8;
+
+                                    buffer[i++] = sensext_value[1]&0xff;
+                                    buffer[i++] = sensext_value[1]>>8;
+    //								sprintf(buffer,"w,%u,%u\r\n", sensext_value[0],  sensext_value[1]);
+                                    break;
+                                case -2:	// i2c cmps03
+                                    buffer[i++] = sensext_value[0]&0xff;
+                                    buffer[i++] = sensext_value[0]>>8;
+
+                                    buffer[i++] = sensext_value[1]&0xff;
+                                    buffer[i++] = sensext_value[1]>>8;
+    //								sprintf(buffer,"w,%d,%d\r\n",  sensext_value[0],  sensext_value[1]);
+                                    break;
+                                default: //analog (sharp,...)
+                                    buffer[i++] = (sensext_value[0]&0xff);
+                                    buffer[i++] = (sensext_value[0]>>8);
+    //							sprintf(buffer,"w,%d\r\n",  sensext_value[0]);
+                                    break;
+                            }
+    //						uart_send_text(buffer);
+                        }
+                        else
+                        {
+                            switch(sensext_param[0])
+                            {
+                                case -1:
+                                case -2:
+                                    sensext_value[0] = -1;
+                                    sensext_value[1] = -1;
+                                    buffer[i++] = sensext_value[0]&0xff;
+                                    buffer[i++] = sensext_value[0]>>8;
+
+                                    buffer[i++] = sensext_value[1]&0xff;
+                                    buffer[i++] = sensext_value[1]>>8;
+                                    break;
+                                default:
+                                    sensext_value[0] = -1;
+                                    sensext_value[1] = -1;
+                                    buffer[i++] = sensext_value[0]&0xff;
+                                    buffer[i++] = sensext_value[0]>>8;
+                                    break;
+                            }
+    //						uart_send_static_text("wrong parameter\r\n");
+                        }
+
+                    }
+                    else
+                    {
+                        uart_send_static_text("LIS sensors turret not present\r\n");
+                    }
+#endif
+                    break;
+                    default: // silently ignored
                         break;
                     }
-					break;
-				case 'M': // optional floor sensors
-#ifdef FLOOR_SENSORS
-					e_i2cp_enable();
-
-					for (j=0; j<3; ++j) {
-						buffer[i++] = e_i2cp_read(0xC0,2*j+1);
-						buffer[i++] = e_i2cp_read(0xC0,2*j);
-					}
-
-					e_i2cp_disable();
-#else
-					for(j=0;j<6;j++) buffer[i++]=0;
-#endif
-					break;
-				case 'N': // read proximity sensors
-					for(j=0;j<8;j++) {
-						n=e_get_calibrated_prox(j);
-						buffer[i++]=n&0xff;
-						buffer[i++]=n>>8;
-					}
-					break;
-				case 'O': // read light sensors
-					for(j=0;j<8;j++) {
-						n=e_get_ambient_light(j);
-						buffer[i++]=n&0xff;
-						buffer[i++]=n>>8;
-					}
-					break;
-				case 'Q': // read encoders
-                    n=e_get_steps_left();
-					buffer[i++]=n&0xff;
-					buffer[i++]=n>>8;
-                    n=e_get_steps_right();
-					buffer[i++]=n&0xff;
-					buffer[i++]=n>>8;
-					break;
-				case 'u': // get last micro volumes
-					n=e_get_micro_volume(0);
-					buffer[i++]=n&0xff;
-					buffer[i++]=n>>8;
-
-					n=e_get_micro_volume(1);
-					buffer[i++]=n&0xff;
-					buffer[i++]=n>>8;
-
-					n=e_get_micro_volume(2);
-					buffer[i++]=n&0xff;
-					buffer[i++]=n>>8;
-					break;
-				case 'U': // get micro buffer
-					address=(char *)e_mic_scan;
-					e_send_uart1_char(address,600);//send sound buffer
-					n=e_last_mic_scan_id;//send last scan
-					buffer[i++]=n&0xff;
-					break;
-			case 'W': // read Devantec ultrasonic range sensor or Sharp Ir sensor (optional)
-#ifdef LIS_SENSORS_TURRET
-					while (e_getchar_uart1(&c1)==0);
-					while (e_getchar_uart1(&c2)==0);
-					sensext_param[0] = (unsigned char)c1+((unsigned int)c2<<8);
-//			sscanf(buffer,"W,%d\r",&sensext_param[0]);
-				if (sensext_pres)				// If the TP_sensors tourret is present
-				{
-					if(e_sensext_process(sensext_param, sensext_value))
-					{
-						switch (sensext_param[0])
-						{
-							case -1:	//i2c SRFxxx
-								buffer[i++] = sensext_value[0]&0xff;
-								buffer[i++] = sensext_value[0]>>8;
-
-								buffer[i++] = sensext_value[1]&0xff;
-								buffer[i++] = sensext_value[1]>>8;
-//								sprintf(buffer,"w,%u,%u\r\n", sensext_value[0],  sensext_value[1]);
-								break;
-							case -2:	// i2c cmps03
-								buffer[i++] = sensext_value[0]&0xff;
-								buffer[i++] = sensext_value[0]>>8;
-
-								buffer[i++] = sensext_value[1]&0xff;
-								buffer[i++] = sensext_value[1]>>8;
-//								sprintf(buffer,"w,%d,%d\r\n",  sensext_value[0],  sensext_value[1]);
-								break;
-							default: //analog (sharp,...)
-								buffer[i++] = (sensext_value[0]&0xff);
-								buffer[i++] = (sensext_value[0]>>8);
-//							sprintf(buffer,"w,%d\r\n",  sensext_value[0]);
-								break;
-						}
-//						uart_send_text(buffer);
-					}
-					else
-					{
-						switch(sensext_param[0])
-						{
-							case -1:
-							case -2:
-								sensext_value[0] = -1;
-								sensext_value[1] = -1;
-								buffer[i++] = sensext_value[0]&0xff;
-								buffer[i++] = sensext_value[0]>>8;
-
-								buffer[i++] = sensext_value[1]&0xff;
-								buffer[i++] = sensext_value[1]>>8;
-								break;
-							default:
-								sensext_value[0] = -1;
-								sensext_value[1] = -1;
-								buffer[i++] = sensext_value[0]&0xff;
-								buffer[i++] = sensext_value[0]>>8;
-								break;
-						}
-//						uart_send_static_text("wrong parameter\r\n");
-					}
-
-				}
-				else
-				{
-					uart_send_static_text("LIS sensors turret not present\r\n");
-				}
-#endif
-				break;
-				default: // silently ignored
-					break;
-				}
-				while (e_getchar_uart1(&c)==0); // get next command
+                    while (e_getchar_uart1(&c)==0); // get next command
+                }
+                last_tmstmp = tmstmp;
 			} while(c < 0);
 
 			if (i!=0){
@@ -568,250 +571,252 @@ int main(void) {
             } while (c!='\n' && c!='\r');
 			buffer[i++]='\0';
 			buffer[0]=toupper(buffer[0]); // we also accept lowercase letters
-			switch (buffer[0]) {
-			case 'A': // read accelerometer
-				accx=e_get_acc(0);
-				accy=e_get_acc(1);
-				accz=e_get_acc(2);
-				sprintf(buffer,"a%c,%d,%d,%d\r\n",tmstmp,accx,accy,accz);
-				uart_send_text(buffer);
-			/*	accelero=e_read_acc_spheric();
-				sprintf(buffer,"a,%f,%f,%f\r\n",accelero.acceleration,accelero.orientation,accelero.inclination);				
-				uart_send_text(buffer);*/
-				break;
-			case 'B': // set body led
-				sscanf(buffer,"B,%d\r",&LED_action);
-			 	e_set_body_led(LED_action);
-				sprintf(buffer,"b%c\r\n",tmstmp);
-				uart_send_text(buffer);
-				break;
-			case 'C': // read selector position
-				selector = SELECTOR0 + 2*SELECTOR1 + 4*SELECTOR2 + 8*SELECTOR3;
-				sprintf(buffer,"c%c,%d\r\n",tmstmp,selector);
-				uart_send_text(buffer);
-				break;
-			case 'D': // set motor speed
-				sscanf(buffer, "D,%d,%d\r", &speedl, &speedr);
-				e_set_speed_left(speedl);
-				e_set_speed_right(speedr);
-				sprintf(buffer, "d%c\r\n", tmstmp);
-				uart_send_text(buffer);
-				break;
-			case 'E': // read motor speed
-				sprintf(buffer,"e%c,%d,%d\r\n",tmstmp,speedl,speedr);
-				uart_send_text(buffer);
-				break;
-			case 'F': // set front led
-				sscanf(buffer,"F,%d\r",&LED_action);
-				e_set_front_led(LED_action);
-				sprintf(buffer, "f%c\r\n", tmstmp);
-				uart_send_text(buffer);
-				break;
+            if (last_tmstmp != tmstmp) {
+                switch (buffer[0]) {
+                case 'A': // read accelerometer
+                    accx=e_get_acc(0);
+                    accy=e_get_acc(1);
+                    accz=e_get_acc(2);
+                    sprintf(buffer,"a%c,%d,%d,%d\r\n",tmstmp,accx,accy,accz);
+                    uart_send_text(buffer);
+                /*	accelero=e_read_acc_spheric();
+                    sprintf(buffer,"a,%f,%f,%f\r\n",accelero.acceleration,accelero.orientation,accelero.inclination);				
+                    uart_send_text(buffer);*/
+                    break;
+                case 'B': // set body led
+                    sscanf(buffer,"B,%d\r",&LED_action);
+                    e_set_body_led(LED_action);
+                    sprintf(buffer,"b%c\r\n",tmstmp);
+                    uart_send_text(buffer);
+                    break;
+                case 'C': // read selector position
+                    selector = SELECTOR0 + 2*SELECTOR1 + 4*SELECTOR2 + 8*SELECTOR3;
+                    sprintf(buffer,"c%c,%d\r\n",tmstmp,selector);
+                    uart_send_text(buffer);
+                    break;
+                case 'D': // set motor speed
+                    sscanf(buffer, "D,%d,%d\r", &speedl, &speedr);
+                    e_set_speed_left(speedl);
+                    e_set_speed_right(speedr);
+                    sprintf(buffer, "d%c\r\n", tmstmp);
+                    uart_send_text(buffer);
+                    break;
+                case 'E': // read motor speed
+                    sprintf(buffer,"e%c,%d,%d\r\n",tmstmp,speedl,speedr);
+                    uart_send_text(buffer);
+                    break;
+                case 'F': // set front led
+                    sscanf(buffer,"F,%d\r",&LED_action);
+                    e_set_front_led(LED_action);
+                    sprintf(buffer, "f%c\r\n", tmstmp);
+                    uart_send_text(buffer);
+                    break;
 #ifdef IR_RECIEVER
-			case 'G':
-                  sprintf(buffer,"g IR check : 0x%x, address : 0x%x, data : 0x%x\r\n", e_get_check(), e_get_address(), e_get_data());
-                  uart_send_text(buffer);
-                  break;
+                case 'G':
+                    sprintf(buffer,"g IR check : 0x%x, address : 0x%x, data : 0x%x\r\n", e_get_check(), e_get_address(), e_get_data());
+                    uart_send_text(buffer);
+                    break;
 #endif
-			case 'H': // ask for help
-				uart_send_static_text("\n");
-				uart_send_static_text("\"A\"         Accelerometer\r\n");
-				uart_send_static_text("\"B,#\"       Body led 0=off 1=on 2=inverse\r\n");
-				uart_send_static_text("\"C\"         Selector position\r\n");
-				uart_send_static_text("\"D,#,#\"     Set motor speed left,right\r\n");
-				uart_send_static_text("\"E\"         Get motor speed left,right\r\n");
-				uart_send_static_text("\"F,#\"       Front led 0=off 1=on 2=inverse\r\n");
+                case 'H': // ask for help
+                    uart_send_static_text("\n");
+                    uart_send_static_text("\"A\"         Accelerometer\r\n");
+                    uart_send_static_text("\"B,#\"       Body led 0=off 1=on 2=inverse\r\n");
+                    uart_send_static_text("\"C\"         Selector position\r\n");
+                    uart_send_static_text("\"D,#,#\"     Set motor speed left,right\r\n");
+                    uart_send_static_text("\"E\"         Get motor speed left,right\r\n");
+                    uart_send_static_text("\"F,#\"       Front led 0=off 1=on 2=inverse\r\n");
 #ifdef IR_RECIEVER
-				uart_send_static_text("\"G\"         IR receiver\r\n");
+                    uart_send_static_text("\"G\"         IR receiver\r\n");
 #endif
-				uart_send_static_text("\"H\"	     Help\r\n");
-				uart_send_static_text("\"I\"         Get camera parameter\r\n");
-				uart_send_static_text("\"J,#,#,#,#\" Set camera parameter mode,width,heigth,zoom(1,4 or 8)\r\n");
-				uart_send_static_text("\"K\"         Calibrate proximity sensors\r\n");
-				uart_send_static_text("\"L,#,#\"     Led number,0=off 1=on 2=inverse\r\n");
+                    uart_send_static_text("\"H\"	     Help\r\n");
+                    uart_send_static_text("\"I\"         Get camera parameter\r\n");
+                    uart_send_static_text("\"J,#,#,#,#\" Set camera parameter mode,width,heigth,zoom(1,4 or 8)\r\n");
+                    uart_send_static_text("\"K\"         Calibrate proximity sensors\r\n");
+                    uart_send_static_text("\"L,#,#\"     Led number,0=off 1=on 2=inverse\r\n");
 #ifdef FLOOR_SENSORS
-				uart_send_static_text("\"M\"         Floor sensors\r\n");
+                    uart_send_static_text("\"M\"         Floor sensors\r\n");
 #endif
-				uart_send_static_text("\"N\"         Proximity\r\n");
-				uart_send_static_text("\"O\"         Light sensors\r\n");
-				uart_send_static_text("\"P,#,#\"     Set motor position left,right\r\n");
-				uart_send_static_text("\"Q\"         Get motor position left,right\r\n");
-				uart_send_static_text("\"R\"         Reset e-puck\r\n");
-				uart_send_static_text("\"S\"         Stop e-puck and turn off leds\r\n");
-				uart_send_static_text("\"T,#\"       Play sound 1-5 else stop sound\r\n");
-				uart_send_static_text("\"U\"         Get microphone amplitude\r\n");
-				uart_send_static_text("\"V\"         Version of SerCom\r\n");
+                    uart_send_static_text("\"N\"         Proximity\r\n");
+                    uart_send_static_text("\"O\"         Light sensors\r\n");
+                    uart_send_static_text("\"P,#,#\"     Set motor position left,right\r\n");
+                    uart_send_static_text("\"Q\"         Get motor position left,right\r\n");
+                    uart_send_static_text("\"R\"         Reset e-puck\r\n");
+                    uart_send_static_text("\"S\"         Stop e-puck and turn off leds\r\n");
+                    uart_send_static_text("\"T,#\"       Play sound 1-5 else stop sound\r\n");
+                    uart_send_static_text("\"U\"         Get microphone amplitude\r\n");
+                    uart_send_static_text("\"V\"         Version of SerCom\r\n");
 #ifdef LIS_SENSORS_TURRET
-				if (sensext_pres)				// If the TP_sensors tourret is present
-					uart_send_static_text("\"W,#\"       Sensor extension turret. Analog: W,0; analog 5 LEDs: W,0->31; i2c dist: W,-1; i2c comp: W,-2\r\n");
-				else
-					uart_send_static_text("\"W,#\"       Sensor extension turret not detected. Function deactivated.");
+                    if (sensext_pres)				// If the TP_sensors tourret is present
+                        uart_send_static_text("\"W,#\"       Sensor extension turret. Analog: W,0; analog 5 LEDs: W,0->31; i2c dist: W,-1; i2c comp: W,-2\r\n");
+                    else
+                        uart_send_static_text("\"W,#\"       Sensor extension turret not detected. Function deactivated.");
 #endif
 
-				break;
-			case 'I':
-				sprintf(buffer,"i%c,%d,%d,%d,%d,%d\r\n",tmstmp,cam_mode,cam_width,cam_heigth,cam_zoom,cam_size);
-				uart_send_text(buffer);
-				break;
-			case 'J'://set camera parameter see also cam library
-				sscanf(buffer,"J,%d,%d,%d,%d\r",&cam_mode,&cam_width,&cam_heigth,&cam_zoom);
-				if(cam_mode==GREY_SCALE_MODE)
-					cam_size=cam_width*cam_heigth;
-				else
-                    cam_size=cam_width*cam_heigth*2;
-				e_poxxxx_init_cam();
-				e_poxxxx_config_cam((ARRAY_WIDTH -cam_width*cam_zoom)/2,(ARRAY_HEIGHT-cam_heigth*cam_zoom)/2,cam_width*cam_zoom,cam_heigth*cam_zoom,cam_zoom,cam_zoom,cam_mode);
-    			e_poxxxx_set_mirror(1,1);
-   				e_poxxxx_write_cam_registers();
-				sprintf(buffer, "j%c\r\n", tmstmp);
-   				uart_send_text(buffer);
-   				break;
-			case 'K':  // calibrate proximity sensors
-				uart_send_static_text("k, Starting calibration - Remove any object in sensors range\r\n");
-				e_calibrate_ir();
-				sprintf(buffer, "k%c\r\n", tmstmp);
-				uart_send_text(buffer);
-				break;
-			case 'L': // set led
-				sscanf(buffer,"L,%d,%d\r",&LED_nbr,&LED_action);
-				e_set_led(LED_nbr,LED_action);
-				sprintf(buffer, "l%c\r\n", tmstmp);
-				uart_send_text(buffer);
-				break;
-			case 'M': // read floor sensors (optional)
+                    break;
+                case 'I':
+                    sprintf(buffer,"i%c,%d,%d,%d,%d,%d\r\n",tmstmp,cam_mode,cam_width,cam_heigth,cam_zoom,cam_size);
+                    uart_send_text(buffer);
+                    break;
+                case 'J'://set camera parameter see also cam library
+                    sscanf(buffer,"J,%d,%d,%d,%d\r",&cam_mode,&cam_width,&cam_heigth,&cam_zoom);
+                    if(cam_mode==GREY_SCALE_MODE)
+                        cam_size=cam_width*cam_heigth;
+                    else
+                        cam_size=cam_width*cam_heigth*2;
+                    e_poxxxx_init_cam();
+                    e_poxxxx_config_cam((ARRAY_WIDTH -cam_width*cam_zoom)/2,(ARRAY_HEIGHT-cam_heigth*cam_zoom)/2,cam_width*cam_zoom,cam_heigth*cam_zoom,cam_zoom,cam_zoom,cam_mode);
+                    e_poxxxx_set_mirror(1,1);
+                    e_poxxxx_write_cam_registers();
+                    sprintf(buffer, "j%c\r\n", tmstmp);
+                    uart_send_text(buffer);
+                    break;
+                case 'K':  // calibrate proximity sensors
+                    uart_send_static_text("k, Starting calibration - Remove any object in sensors range\r\n");
+                    e_calibrate_ir();
+                    sprintf(buffer, "k%c\r\n", tmstmp);
+                    uart_send_text(buffer);
+                    break;
+                case 'L': // set led
+                    sscanf(buffer,"L,%d,%d\r",&LED_nbr,&LED_action);
+                    e_set_led(LED_nbr,LED_action);
+                    sprintf(buffer, "l%c\r\n", tmstmp);
+                    uart_send_text(buffer);
+                    break;
+                case 'M': // read floor sensors (optional)
 #ifdef FLOOR_SENSORS
-				e_i2cp_enable();
-				for (i=0; i<6; i++)	buffer[i] = e_i2cp_read(0xC0,i);
-				e_i2cp_disable();
-				sprintf(buffer,"m%c,%d,%d,%d\r\n",tmstmp,
-				(unsigned int)buffer[1] | ((unsigned int)buffer[0] << 8),
-				(unsigned int)buffer[3] | ((unsigned int)buffer[2] << 8),
-				(unsigned int)buffer[5] | ((unsigned int)buffer[4] << 8));
-				uart_send_text(buffer);
+                    e_i2cp_enable();
+                    for (i=0; i<6; i++)	buffer[i] = e_i2cp_read(0xC0,i);
+                    e_i2cp_disable();
+                    sprintf(buffer,"m%c,%d,%d,%d\r\n",tmstmp,
+                    (unsigned int)buffer[1] | ((unsigned int)buffer[0] << 8),
+                    (unsigned int)buffer[3] | ((unsigned int)buffer[2] << 8),
+                    (unsigned int)buffer[5] | ((unsigned int)buffer[4] << 8));
+                    uart_send_text(buffer);
 #else
-				sprintf(buffer,"m%c,0,0,0\r\n", tmstmp);
-				uart_send_text(buffer);
+                    sprintf(buffer,"m%c,0,0,0\r\n", tmstmp);
+                    uart_send_text(buffer);
 #endif
-				break;
-			case 'N': // read proximity sensors
-				sprintf(buffer,"n%c,%d,%d,%d,%d,%d,%d,%d,%d\r\n",tmstmp,
-				        e_get_calibrated_prox(0),e_get_calibrated_prox(1),e_get_calibrated_prox(2),e_get_calibrated_prox(3),
-				        e_get_calibrated_prox(4),e_get_calibrated_prox(5),e_get_calibrated_prox(6),e_get_calibrated_prox(7));
-				uart_send_text(buffer);
-				break;
-			case 'O': // read ambient light sensors
-				sprintf(buffer,"o%c,%d,%d,%d,%d,%d,%d,%d,%d\r\n",tmstmp,
-				        e_get_ambient_light(0),e_get_ambient_light(1),e_get_ambient_light(2),e_get_ambient_light(3),
-				        e_get_ambient_light(4),e_get_ambient_light(5),e_get_ambient_light(6),e_get_ambient_light(7));
-				uart_send_text(buffer);
-				break;
-			case 'P': // set motor position
-				sscanf(buffer,"P,%d,%d\r",&positionl,&positionr);
-				e_set_steps_left(positionl);
-				e_set_steps_right(positionr);
-				sprintf(buffer,"p%c\r\n", tmstmp);
-				uart_send_text(buffer);
-				break;
-			case 'Q': // read motor position
-				sprintf(buffer,"q%c,%d,%d\r\n",tmstmp,e_get_steps_left(),e_get_steps_right());
-				uart_send_text(buffer);
-				break;
-			case 'R': // reset
-				sprintf(buffer, "r%c\r\n", tmstmp);
-				uart_send_text(buffer);
-                while(e_uart1_sending());
-				uart_send_text("\n");
-				RESET();
-				break;
-			case 'S': // stop
-				e_set_speed_left(0);
-				e_set_speed_right(0);
-				e_set_led(8,0);
+                    break;
+                case 'N': // read proximity sensors
+                    sprintf(buffer,"n%c,%d,%d,%d,%d,%d,%d,%d,%d\r\n",tmstmp,
+                            e_get_calibrated_prox(0),e_get_calibrated_prox(1),e_get_calibrated_prox(2),e_get_calibrated_prox(3),
+                            e_get_calibrated_prox(4),e_get_calibrated_prox(5),e_get_calibrated_prox(6),e_get_calibrated_prox(7));
+                    uart_send_text(buffer);
+                    break;
+                case 'O': // read ambient light sensors
+                    sprintf(buffer,"o%c,%d,%d,%d,%d,%d,%d,%d,%d\r\n",tmstmp,
+                            e_get_ambient_light(0),e_get_ambient_light(1),e_get_ambient_light(2),e_get_ambient_light(3),
+                            e_get_ambient_light(4),e_get_ambient_light(5),e_get_ambient_light(6),e_get_ambient_light(7));
+                    uart_send_text(buffer);
+                    break;
+                case 'P': // set motor position
+                    sscanf(buffer,"P,%d,%d\r",&positionl,&positionr);
+                    e_set_steps_left(positionl);
+                    e_set_steps_right(positionr);
+                    sprintf(buffer,"p%c\r\n", tmstmp);
+                    uart_send_text(buffer);
+                    break;
+                case 'Q': // read motor position
+                    sprintf(buffer,"q%c,%d,%d\r\n",tmstmp,e_get_steps_left(),e_get_steps_right());
+                    uart_send_text(buffer);
+                    break;
+                case 'R': // reset
+                    sprintf(buffer, "r%c\r\n", tmstmp);
+                    uart_send_text(buffer);
+                    while(e_uart1_sending());
+                    uart_send_text("\n");
+                    RESET();
+                    break;
+                case 'S': // stop
+                    e_set_speed_left(0);
+                    e_set_speed_right(0);
+                    e_set_led(8,0);
 
-				sprintf(buffer, "s%c\r\n", tmstmp);
-				uart_send_text(buffer);
-				break;
-			case 'T': // stop
-				sscanf(buffer,"T,%d",&sound);
-				if(first==0){
-					e_init_sound();
-					first=1;
-				}
-				switch(sound)
-				{
-					case 1: e_play_sound(0,2112);break;
-					case 2: e_play_sound(2116,1760);break;
-					case 3: e_play_sound(3878,3412);break;
-					case 4: e_play_sound(7294,3732);break;
-					case 5: e_play_sound(11028,8016);break;
-					default:
-						e_close_sound();
-						first=0;
-						break;
-				}
-				sprintf(buffer, "t%c\r\n", tmstmp);
-				uart_send_text(buffer);
-				break;
-			case 'U':
-				sprintf(buffer,"u%c,%d,%d,%d\r\n",tmstmp,e_get_micro_volume(0),e_get_micro_volume(1),e_get_micro_volume(2));
-				uart_send_text(buffer);
-				break;
-			case 'V': // get version information
-				sprintf(buffer, "v%c, DM Version 0.2 2011\r\n", tmstmp);
-				uart_send_text(buffer);
-				break;
-			case 'W': // read Devantec ultrasonic range sensor or Sharp Ir sensor (optional)
+                    sprintf(buffer, "s%c\r\n", tmstmp);
+                    uart_send_text(buffer);
+                    break;
+                case 'T': // stop
+                    sscanf(buffer,"T,%d",&sound);
+                    if(first==0){
+                        e_init_sound();
+                        first=1;
+                    }
+                    switch(sound)
+                    {
+                        case 1: e_play_sound(0,2112);break;
+                        case 2: e_play_sound(2116,1760);break;
+                        case 3: e_play_sound(3878,3412);break;
+                        case 4: e_play_sound(7294,3732);break;
+                        case 5: e_play_sound(11028,8016);break;
+                        default:
+                            e_close_sound();
+                            first=0;
+                            break;
+                    }
+                    sprintf(buffer, "t%c\r\n", tmstmp);
+                    uart_send_text(buffer);
+                    break;
+                case 'U':
+                    sprintf(buffer,"u%c,%d,%d,%d\r\n",tmstmp,e_get_micro_volume(0),e_get_micro_volume(1),e_get_micro_volume(2));
+                    uart_send_text(buffer);
+                    break;
+                case 'V': // get version information
+                    sprintf(buffer, "v%c, DM Version 0.2 2011\r\n", tmstmp);
+                    uart_send_text(buffer);
+                    break;
+                case 'W': // read Devantec ultrasonic range sensor or Sharp Ir sensor (optional)
 #ifdef LIS_SENSORS_TURRET
-			sscanf(buffer,"W,%d\r",&sensext_param[0]);
-				if (sensext_pres)				// If the TP_sensors tourret is present
-				{
-					if(e_sensext_process(sensext_param, sensext_value))
-					{
-						switch (sensext_param[0])
-						{
-							case -1:	//i2c SRFxxx
-								sprintf(buffer,"w%c,%u,%u\r\n", tmstmp,sensext_value[0],  sensext_value[1]);
-									break;
-							case -2:	// i2c cmps03
-								sprintf(buffer,"w%c,%d,%d\r\n", tmstmp, sensext_value[0],  sensext_value[1]);
-									break;
-							default: //analog (sharp,...)
-							sprintf(buffer,"w%c,%d\r\n", tmstmp, sensext_value[0]);
+                sscanf(buffer,"W,%d\r",&sensext_param[0]);
+                    if (sensext_pres)				// If the TP_sensors tourret is present
+                    {
+                        if(e_sensext_process(sensext_param, sensext_value))
+                        {
+                            switch (sensext_param[0])
+                            {
+                                case -1:	//i2c SRFxxx
+                                    sprintf(buffer,"w%c,%u,%u\r\n", tmstmp,sensext_value[0],  sensext_value[1]);
+                                        break;
+                                case -2:	// i2c cmps03
+                                    sprintf(buffer,"w%c,%d,%d\r\n", tmstmp, sensext_value[0],  sensext_value[1]);
+                                        break;
+                                default: //analog (sharp,...)
+                                sprintf(buffer,"w%c,%d\r\n", tmstmp, sensext_value[0]);
 
-						}
-						uart_send_text(buffer);
-					}
-					else
-					{
-						uart_send_static_text("wrong parameter\r\n");
-					}
+                            }
+                            uart_send_text(buffer);
+                        }
+                        else
+                        {
+                            uart_send_static_text("wrong parameter\r\n");
+                        }
 
-				}
-				else
-				{
-					uart_send_static_text("LIS sensors turret not present\r\n");
-				}
+                    }
+                    else
+                    {
+                        uart_send_static_text("LIS sensors turret not present\r\n");
+                    }
 #endif
-				break;
+                    break;
 
-			case 'X':  // Dummy command returning a number of bytes given as parameter
-				sscanf(buffer,"X,%d\r",&positionl);
-				buffer[positionl+3]='\r';
-				buffer[positionl+4]='\n';
-				while(positionl>0) {
-					buffer[positionl+2]='1';
-					positionl--;
-				}
-				buffer[0]='x';
-				buffer[1]=tmstmp;
-				buffer[2]=',';
-				uart_send_text(buffer);
-				break;
-			default:
-				sprintf(buffer, "z%c,Command not found\r\n", tmstmp);
-				uart_send_text(buffer);
-				break;
-			}
+                case 'X':  // Dummy command returning a number of bytes given as parameter
+                    sscanf(buffer,"X,%d\r",&positionl);
+                    buffer[positionl+3]='\r';
+                    buffer[positionl+4]='\n';
+                    while(positionl>0) {
+                        buffer[positionl+2]='1';
+                        positionl--;
+                    }
+                    buffer[0]='x';
+                    buffer[1]=tmstmp;
+                    buffer[2]=',';
+                    uart_send_text(buffer);
+                    break;
+                default:
+                    sprintf(buffer, "z%c,Command not found\r\n", tmstmp);
+                    uart_send_text(buffer);
+                    break;
+                }
+            }
 		}
 	}
 }
