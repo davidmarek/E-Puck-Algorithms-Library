@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import decorator
+import Image
 import logging
+import random
 import string
 
 from comm.async import AsyncComm
@@ -56,8 +58,8 @@ class Controller(object):
             self.comm = SyncComm(port, **kwargs)
 
         self.update_every = update
-        self.command_index = 0
-        self.command_i = string.printable[0]
+        self.command_index = random.randrange(len(string.printable))
+        self.command_i = string.printable[self.command_index]
 
         self.motor_speed = [0, 0]
         self.body_led = False
@@ -82,7 +84,7 @@ class Controller(object):
         """Set the speed of the motors."""
         if (-self.MAX_SPEED <= left <= self.MAX_SPEED) \
         and (-self.MAX_SPEED <= right <= self.MAX_SPEED):
-            command = "D%c,%d,%d\r\n" % (self.command_i, left, right)
+            command = "D%c,%d,%d\n" % (self.command_i, left, right)
             ret = self.comm.send_command(command, self.command_i, 'd')
             return ret
         else:
@@ -106,7 +108,7 @@ class Controller(object):
             except Exception as e:
                 self.logger.error(e)
 
-        command = "E%c\r\n" % self.command_i
+        command = "E%c\n" % self.command_i
         ret = self.comm.send_command(command, self.command_i, 'e', _parse_response)
         return ret
 
@@ -119,7 +121,7 @@ class Controller(object):
             value - boolean, turn the led on.
 
         """
-        command = "B%c,%d\r\n" % (self.command_i, 1 if value else 0)
+        command = "B%c,%d\n" % (self.command_i, 1 if value else 0)
         ret = self.comm.send_command(command, self.command_i, 'b')
         return ret
 
@@ -132,7 +134,7 @@ class Controller(object):
             value - boolean, turn the led on.
 
         """
-        command = "F%c,%d\r\n" % (self.command_i, 1 if value else 0)
+        command = "F%c,%d\n" % (self.command_i, 1 if value else 0)
         ret = self.comm.send_command(command, self.command_i, 'f')
         return ret
 
@@ -145,7 +147,7 @@ class Controller(object):
             value - boolean, turn the leds on.
 
         """
-        command = "L%c,9,%d\r\n" % (self.command_i, 1 if value else 0)
+        command = "L%c,9,%d\n" % (self.command_i, 1 if value else 0)
         ret = self.comm.send_command(command, self.command_i, 'l')
         return ret
 
@@ -163,7 +165,7 @@ class Controller(object):
 
         """
         if (0 <= led_no <= 7):
-            command = "L%c,%d,%d\r\n" % (self.command_i, led_no, 1 if value else 0)
+            command = "L%c,%d,%d\n" % (self.command_i, led_no, 1 if value else 0)
             ret = self.comm.send_command(command, self.command_i, 'l')
             return ret
         else:
@@ -185,7 +187,7 @@ class Controller(object):
             except Exception as e:
                 self.logger.error(e)
 
-        command = "C%c\r\n" % self.command_i
+        command = "C%c\n" % self.command_i
         ret = self.comm.send_command(command, self.command_i, 'c', _parse_response)
         return ret
 
@@ -213,7 +215,7 @@ class Controller(object):
             except ValueError as e:
                 self.logger.error(e)
 
-        command = "N%c\r\n" % self.command_i
+        command = "N%c\n" % self.command_i
         ret = self.comm.send_command(command, self.command_i, 'n', _parse_response)
         return ret
 
@@ -241,7 +243,7 @@ class Controller(object):
             except ValueError as e:
                 self.logger.error(e)
 
-        command = "O%c\r\n" % self.command_i
+        command = "O%c\n" % self.command_i
         ret = self.comm.send_command(command, self.command_i, 'o', _parse_response)
         return ret
 
@@ -262,7 +264,7 @@ class Controller(object):
             zoom - zoom factor
         """
         if 0 < width < 640 and 0 < height < 480 and mode in (GREYSCALE_MODE, RGB565_MODE):
-            command = "J%c,%d,%d,%d,%d\r\n" % (self.command_i, mode, width, height, zoom)
+            command = "J%c,%d,%d,%d,%d\n" % (self.command_i, mode, width, height, zoom)
             ret = self.comm.send_command(command, self.command_i, 'j')
             return ret
         else:
@@ -286,23 +288,30 @@ class Controller(object):
             except ValueError as e:
                 self.logger.error(e)
 
-        command = "I%c\r\n" % self.command_i
+        command = "I%c\n" % self.command_i
         ret = self.comm.send_command(command, self.command_i, 'i', _parse_response)
         return ret
 
     @command
     def get_photo(self):
         """Take a photo."""
+        def _parse_response(response):
+            mode = response[0]
+            image = response[1:]
+            with open('image', 'w') as f:
+                f.write(image)
+            return Image.fromstring('RGB', (40,40), image, 'raw', 'BGR;16')
+
         c = chr(256 - ord("I"))
         command = "%c%c%c" % (c, self.command_i, chr(0))
-        ret = self.comm.send_command(command, self.command_i, c)
+        ret = self.comm.send_command(command, self.command_i, c, _parse_response)
         return ret
 
 
     @command
     def reset(self):
         """Reset the robot."""
-        command = "R%c\r\n" % self.command_i
+        command = "R%c\n" % self.command_i
         ret = self.comm.send_command(command, self.command_i, 'r')
         return ret
 
@@ -322,7 +331,7 @@ class Controller(object):
             right - position of right motor
 
         """
-        command = "P%c,%d,%d\r\n" % (self.command_i, left, right)
+        command = "P%c,%d,%d\n" % (self.command_i, left, right)
         ret = self.comm.send_command(command, self.command_i, 'p')
         return ret
 
@@ -339,7 +348,7 @@ class Controller(object):
             except ValueError as e:
                 self.logger.error(e)
 
-        command = "Q%c\r\n" % (self.command_i)
+        command = "Q%c\n" % (self.command_i)
         ret = self.comm.send_command(command, self.command_i, 'q', _parse_response)
         return ret
 
