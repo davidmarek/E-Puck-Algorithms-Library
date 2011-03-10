@@ -56,6 +56,8 @@ class RequestHandler(object):
 
     def get_response(self):
         """Return the response."""
+        if not self.response_received():
+            self.join()
         return self.callback(self.response)
 
     def response_received(self):
@@ -78,9 +80,9 @@ class AsyncComm(threading.Thread):
 
     """
 
-    def __init__(self, port, timeout=0.1, offline=False, offline_address=None, **kwargs):
+    def __init__(self, port, timeout=0.5, offline=False, offline_address=None, **kwargs):
         threading.Thread.__init__(self)
-        self.setDaemon(True)
+        self.daemon = True
 
         # Create a connection to the robot.
         # It is possible to test this class without robot using sockets.
@@ -257,6 +259,7 @@ class AsyncComm(threading.Thread):
             sent_time, request = self.response_queue.get()
             if time.time() - sent_time > self.timeout:
                 self._enqueue_request(request)
+                self.logger.debug("Timeout exceeded: Sending command again: %s" % request.command)
             else:
                 self.response_queue.put((sent_time, request))
                 old_requests = False
