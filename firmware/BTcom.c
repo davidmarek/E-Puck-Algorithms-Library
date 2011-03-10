@@ -122,6 +122,27 @@ extern fractcomplex sigCmpx[FFT_BLOCK_LENGTH] __attribute__ ((section (".ydata, 
 
 extern unsigned int e_last_mic_scan_id;
 
+void __attribute__((interrupt, auto_psv)) _LVDInterrupt(void) {
+        _LVDIF=0;
+        _LVDEN=0;
+        _LVDIE=0;
+        //turn on all LED when low battery
+        e_set_led(9,1);
+        //uart_send_static_text("z,replace battery\r\n");
+}
+
+static void init_lvd(){
+        //set interrupt prority  ->  1
+        IPC10=(IPC10 & 0xFF1F) + 0x0020;
+        _LVDIE=0; // disable interrupt
+        _LVDEN=1; // enable lvd module
+
+        //set voltage threshold  -> 7 (<3.1 V, see datasheet p. 184)
+        RCON=(RCON & 0xF0FF) +0x0700;
+        while(!_BGST); // for voltage stabilization
+                _LVDIF=0; // clear interrupt flag
+                _LVDIE=1; // enable interrupt
+}
 
 /* \brief The main function of the programm */
 int main(void) {
@@ -209,6 +230,9 @@ int main(void) {
 //	uart_send_static_text("\f\a"
 //	                      "WELCOME to the SerCom protocol on e-Puck\r\n"
 //	                      "the EPFL education robot type \"H\" for help\r\n");
+
+    init_lvd();
+
 	while(1) {
 
 		while (e_getchar_uart1(&c)==0)
@@ -821,6 +845,7 @@ int main(void) {
                     break;
                 }
             }
+            last_tmstmp = tmstmp;
 		}
 	}
 }
