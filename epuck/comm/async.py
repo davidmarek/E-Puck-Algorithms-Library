@@ -29,6 +29,7 @@ class RequestHandler(object):
         self.timestamp = timestamp
         self.response_code = response_code
         self.callback = callback
+        self.tries = 0
 
         self.response = None
         self.accomplished = threading.Condition()
@@ -80,7 +81,7 @@ class AsyncComm(threading.Thread):
 
     """
 
-    def __init__(self, port, timeout=0.5, offline=False, offline_address=None, **kwargs):
+    def __init__(self, port, timeout=0.5, offline=False, offline_address=None, max_tries=10, **kwargs):
         threading.Thread.__init__(self)
         self.daemon = True
 
@@ -103,6 +104,9 @@ class AsyncComm(threading.Thread):
 
         # Requests that are older than timeout seconds must be sent again.
         self.timeout = timeout
+
+        # Set the max limit of retries.
+        self.max_tries = max_tries
 
         self.logger = logging.getLogger('AsyncComm')
 
@@ -128,18 +132,21 @@ class AsyncComm(threading.Thread):
             input_sockets = [self.serial_connection, self.interrupt_fd_read]
             input_sockets, _, _ = select.select(input_sockets, [], [], self.timeout)
 
-            if len(input_sockets) == 0:
-                # Timeout was reached. Check the requests.
-                self._check_requests_timeout()
+            try:
+                if len(input_sockets) == 0:
+                    # Timeout was reached. Check the requests.
+                    self._check_requests_timeout()
 
-            for i in input_sockets:
-                # The user wants to send a command.
-                if i == self.interrupt_fd_read:
-                    self._process_interrupt()
+                for i in input_sockets:
+                    # The user wants to send a command.
+                    if i == self.interrupt_fd_read:
+                        self._process_interrupt()
 
-                # The robot is sending response.
-                elif i == self.serial_connection:
-                    self._read_response()
+                    # The robot is sending response.
+                    elif i == self.serial_connection:
+                        self._read_response()
+            except AsyncCommError as e:
+                self.logger.error(e)
 
     def _stop_main_loop(self):
         """Stop the main loop."""
@@ -187,22 +194,26 @@ class AsyncComm(threading.Thread):
         """Read a response and save it."""
         code = self.serial_connection.read(1)
 
-        # Binary data
-        if ord(code) >= 127:
-            timestamp = self.serial_connection.read(1)
-            response = self._read_binary_data()
-        # Text data
-        else:
-            response = self._read_text_data().split(',', 1)
-            timestamp = ord(response[0][0])
-            try:
-                response = response[1]
-            except IndexError:
-                response = ''
+        try:
+            # Binary data
+            if ord(code) >= 127:
+                timestamp = self.serial_connection.read(1)
+                response = self._read_binary_data()
+            # Text data
+            else:
+                response = self._read_text_data().split(',', 1)
+                timestamp = ord(response[0][0])
+                try:
+                    response = response[1]
+                except IndexError:
+                    response = ''
 
-        self.logger.debug('Received response. Code: "%s", timestamp: "%s", response: "%s".' % (code, timestamp, response))
+            self.logger.debug('Received response. Code: "%s", timestamp: "%s", response: "%s".' % (code, timestamp, response))
 
-        self._save_response(code, timestamp, response)
+            self._save_response(code, timestamp, response)
+        except TypeError:
+            raise AsyncCommError("No response received")
+
 
     def _read_binary_data(self):
         """Read binary data from the robot.
@@ -258,8 +269,12 @@ class AsyncComm(threading.Thread):
         while old_requests and not self.response_queue.empty():
             sent_time, request = self.response_queue.get()
             if time.time() - sent_time > self.timeout:
-                self._enqueue_request(request)
-                self.logger.debug("Timeout exceeded: Sending command again: %s" % request.command)
+                if request.tries < self.max_tries:
+                    request.tries += 1
+                    self._enqueue_request(request)
+                    self.logger.debug("Timeout exceeded: Sending command again: %s" % request.command)
+                else:
+                    raise AsyncCommError("Max limit exceeded.")
             else:
                 self.response_queue.put((sent_time, request))
                 old_requests = False
