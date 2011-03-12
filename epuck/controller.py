@@ -2,11 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import decorator
-import Image
 import logging
 import random
 import string
-import struct
 
 from comm.async import AsyncComm
 from comm.sync import SyncComm
@@ -22,6 +20,17 @@ class WrongCommand(ControllerError):
     """E-Puck doesn't understand the given command."""
     pass
 
+
+def command(func):
+    """Decorator for commands in controller."""
+    def _command(func, self, *args, **kwargs):
+        self.command_index = (self.command_index + 1) % len(string.ascii_letters)
+        self.command_i = ord(string.ascii_letters[self.command_index])
+        try:
+            return func(self, *args, **kwargs)
+        except CommError as e:
+            self.logger.error(e)
+    return decorator.decorator(_command, func)
 
 class Controller(object):
     """Control E-Puck robot.
@@ -68,16 +77,6 @@ class Controller(object):
         self.leds = 8 * [False]
 
         self.logger = logging.getLogger('Controller')
-
-    def command(func):
-        def _command(func, self, *args, **kwargs):
-            self.command_index = (self.command_index + 1) % len(string.ascii_letters)
-            self.command_i = ord(string.ascii_letters[self.command_index])
-            try:
-                return func(self, *args, **kwargs)
-            except CommError as e:
-                self.logger.error(e)
-        return decorator.decorator(_command, func)
 
 
     @command
