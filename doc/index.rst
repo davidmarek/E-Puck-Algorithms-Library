@@ -121,13 +121,12 @@ Připojení
 
 4. Vlastní připojení::
 
-    $ rfcomm bind rfcomm0
     $ rfcomm connect rfcomm0
 
    Po druhém příkazu by se mělo něco zeptat na heslo, to je stejné s číslem
-   robota (je na něm napsané). 
+   robota (je na něm napsané).
 
-   Možné chyby: 
+   Možné chyby:
 
     *Can't connect RFCOMM socket: Connection refused*
         Nejspíše neběží žádná aplikace, která by se na heslo zeptala. Je třeba spustit např.
