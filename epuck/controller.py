@@ -49,25 +49,25 @@ class Controller(object):
     GREYSCALE_MODE = 0
     RGB565_MODE = 1
 
-    def __init__(self, port, asynchronous=False, update=0, **kwargs):
+    def __init__(self, port, asynchronous=False, **kwargs):
         """Create new controller.
 
         Arguments:
             port -- The device where e-puck robot is connected (e.g. /dev/rfcomm0).
             asynchronous -- Set True to use asynchronous communication.
                 Synchronous communication is default.
-            update -- How often download sensor informations from robot. 0
-                turns it off.
 
         """
 
-        if asynchronous:
-            self.comm = AsyncComm(port, **kwargs)
-            self.comm.start()
-        else:
-            self.comm = SyncComm(port, **kwargs)
+        try:
+            if asynchronous:
+                self.comm = AsyncComm(port, **kwargs)
+                self.comm.start()
+            else:
+                self.comm = SyncComm(port, **kwargs)
+        except SerialException as e:
+            raise ControllerError(e)
 
-        self.update_every = update
         self.command_index = random.randrange(len(string.printable))
         self.command_i = string.printable[self.command_index]
 
