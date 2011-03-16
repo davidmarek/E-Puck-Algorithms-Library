@@ -158,3 +158,95 @@ Příklad::
         :returns: pozice přepínače
         :rtype: int
         :raise: :exc:`~epuck.comm.CommError`
+
+    .. method:: get_proximity_sensors()
+
+        Získat data o vzdálenosti překážek z 8 IR senzorů.
+
+        Senzory vrací hodnotu z rozsahu [0, 4095]. Jsou rozmístěny po obvodu
+        robota zrcadlově na pravé i levé straně. Pokud bereme směr pohybu jako
+        úhel 0 stupňů, tak se senzory nachází na 10, 45 a 90 stupních a také
+        jsou dva vlevo i vpravo na zadní části robota.
+
+        Metoda vrací vždy hodnoty všech senzorů. Pro přehlednější zpracování
+        jsou uloženy ve slovníku, klíč je vždy znak označující levou (L) nebo
+        pravou (P) stranu a pak uhel v jakém se senzor nachází (senzory vzadu
+        jsou označeny B). Seznam klíčů tedy je ``['R10', 'R45', 'R90', 'RB',
+        'LB', 'L90', 'L45', 'L10']``.
+
+        :returns: hodnoty IR senzorů překážek
+        :rtype: dict
+        :raise: :exc:`~epuck.comm.CommError`
+
+    .. method:: get_ambient_sensors()
+
+        Získat data o okolním světlu z 8 IR senzorů.
+
+        Senzory vrací hodnotu z rozsahu [0, 4095]. Jsou rozmístěny po obvodu
+        robota zrcadlově na pravé i levé straně. Pokud bereme směr pohybu jako
+        úhel 0 stupňů, tak se senzory nachází na 10, 45 a 90 stupních a také
+        jsou dva vlevo i vpravo na zadní části robota.
+
+        Metoda vrací vždy hodnoty všech senzorů. Pro přehlednější zpracování
+        jsou uloženy ve slovníku, klíč je vždy znak označující levou (L) nebo
+        pravou (P) stranu a pak uhel v jakém se senzor nachází (senzory vzadu
+        jsou označeny B). Seznam klíčů tedy je ``['R10', 'R45', 'R90', 'RB',
+        'LB', 'L90', 'L45', 'L10']``.
+
+        :returns: naměřené hodnoty okolního světla
+        :rtype: dict
+        :raise: :exc:`~epuck.comm.CommError`
+
+    .. method:: set_camera(mode, width, height, zoom)
+
+        Nastavit parametry kamery.
+
+        E-puck obsahuje kameru o rozlišení 640x480, avšak není možné využít
+        její plnou kapacitu z paměťových důvodů. Proto je třeba nastavit jak
+        velký obrázek uživatel očekává a také jaké prokládání má být použito.
+        Kamera je v robotovi umístěna otočená, ale uživatel dostane už obraz
+        správně orotovaný. Je však dobré na tento fakt myslet při zadávání
+        šířky a výšky. Pokud je zoom 2 nebo 4, tak se o prokládání stará přímo
+        kamera a zrychlí se tak patřičně framerate.
+
+        Například pro rozměry 40x40 a zoom 8 robot vezme ze senzorů kamery
+        obdélník velikosti 320x320 a z něj každý 8. pixel.
+
+        Na parametry jsou kladeny následující požadavky:
+            * velikost * zoom nesmí překročit kapacitu kamery.
+            * velikost dat je omezena velikostí bufferu, který je zhruba 4kB.
+            * zoom by měl být z rychlostních důvodů mocninou dvojky.
+
+        Na formát fotografie nejsou kladena žádná další omezení, co se poměru
+        stran týče. Je tedy možné získat i lineární obraz 480x1.
+
+        Kamera může fotit v režimu rgb565 anebo v režimu stupňů šedi. Pro každý
+        pixel pak používá buď 16 anebo 8 bitů. V režimu šedi je pak framerate
+        dvojnásobný.
+
+        :param mode: mód kamery, buď :const:`Controller.RGB565_MODE`, anebo
+            :const:`Controller.GREYSCALE_MODE`.
+        :param width: šířka požadované fotografie
+        :type width: int
+        :param height: výška požadované fotografie
+        :type height: int
+        :param zoom: velikost prokládání fotografie
+        :type zoom: int
+
+    .. method:: get_camera()
+
+        Získat nastavení kamery.
+
+        Metoda vrací slovník s parametry odpovídajícími parametrům metody
+        :func:`~Controller.set_camera`.
+
+        :return: Slovník s nastavením kamery. Klíče jsou:
+
+            * *mode* -- mód kamery, buď :const:`Controller.RGB565_MODE`, anebo :const:`Controller.GREYSCALE_MODE`.
+            * *width* -- šířka získané fotografie
+            * *height* -- výška získané fotografie
+            * *zoom* -- prokládání fotky
+
+        :rtype: dict
+
+
