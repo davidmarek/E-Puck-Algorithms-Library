@@ -1,7 +1,7 @@
-:mod:`epuck.controller` --- Ovládání robota
-===========================================
+:mod:`epuck` --- Ovládání robota
+================================
 
-.. module:: epuck.controller
+.. module:: epuck
 
 Ovládání robota je velmi jednoduché a přímočaré. V první řadě je potřeba mít
 robota již připojeného. Návod je k nalezení v sekci :ref:`vytvoreni-spojeni-s-robotem`.
@@ -16,7 +16,7 @@ Příklad::
 
     import time
 
-    from epuck.controller import Controller
+    from epuck import Controller
 
     # Input larger than the threshold means there is an obstacle.
     threshold = 300
@@ -45,8 +45,8 @@ Příklad::
     controller.set_speed(0, 0)
 
 
-:class:`Controller`
--------------------
+Třída :class:`Controller`
+-------------------------
 
 .. class:: Controller(port [, asynchronous=False [, timeout=0.5 [, max_tries=10]]])
 
@@ -54,14 +54,14 @@ Příklad::
 
     Při vytváření objektu je možné rozhodnout, zda-li má komunikace probíhat
     synchronně, anebo asynchronně. Tato volba ovlivňuje zda-li se pro
-    komunikaci použije třída :class:`~epuck.comm.sync.SyncComm` anebo
-    :class:`~epuck.comm.async.AsyncComm`. Také na této volbě závisí co budou
+    komunikaci použije třída :class:`~epuck.comm.SyncComm` anebo
+    :class:`~epuck.comm.AsyncComm`. Také na této volbě závisí co budou
     jednotlivé příkazy vracet. V případě synchronní komunikace půjde rovnou o
     odpověď. V případě asynchronní komunikace vrátí
-    :class:`~epuck.comm.async.RequestHandler`. Z něj se stejné informace
-    dostanou metodou :meth:`~epuck.comm.async.RequestHandler.get_response`
+    :class:`~epuck.comm.RequestHandler`. Z něj se stejné informace
+    dostanou metodou :meth:`~epuck.comm.RequestHandler.get_response`
     (další podrobnosti v dokumentaci třídy
-    :class:`~epuck.comm.async.RequestHandler`).
+    :class:`~epuck.comm.RequestHandler`).
 
     :param port: cesta k portu, kde je e-puck připojen (např. :file:`/dev/rfcomm2`)
     :type port: string
@@ -71,14 +71,14 @@ Příklad::
     :type timeout: float
     :param max_tries: maximální počet pokusů o zaslání příkazu (asynchronní komunikace)
     :type max_tries: int
-    :raise: :exc:`~epuck.controller.ControllerError`
+    :raise: :exc:`~epuck.ControllerError`
 
     .. note::
 
         V této dokumentaci jsou popsány návratové hodnoty tak, jak je vrátí
         přímo příkaz při synchronní komunikaci, anebo metoda
-        :meth:`~epuck.comm.async.RequestHandler.get_response` třídy
-        :class:`~epuck.comm.async.RequestHandler` při komunikaci asynchronní.
+        :meth:`~epuck.comm.RequestHandler.get_response` třídy
+        :class:`~epuck.comm.RequestHandler` při komunikaci asynchronní.
 
     .. method:: set_speed(left, right)
 
@@ -86,7 +86,7 @@ Příklad::
         v krocích za sekundu a musí být v rozmezí [-1000, 1000].
 
         Pokud je rychlost mimo rozsah, tak vyvolá výjimku
-        :exc:`~epuck.controller.WrongCommand`. Při asynchronní komunikaci může
+        :exc:`~epuck.WrongCommand`. Při asynchronní komunikaci může
         dojít k vypršení limitu pokusů a pak dojde k vyvolání výjimky
         :exc:`~epuck.comm.CommError`.
 
@@ -94,7 +94,7 @@ Příklad::
         :type left: int
         :param right: požadovaná rychlost pravého kola
         :type right: int
-        :raise: :exc:`~epuck.controller.WrongCommand`, :exc:`~epuck.comm.CommError`
+        :raise: :exc:`~epuck.WrongCommand`, :exc:`~epuck.comm.CommError`
 
     .. method:: get_speed()
 
@@ -143,7 +143,7 @@ Příklad::
         :type led_no: int
         :param on: zapnout nebo vypnout diodu
         :type on: bool
-        :raise: :exc:`~epuck.controller.WrongCommand`, :exc:`~epuck.comm.CommError`
+        :raise: :exc:`~epuck.WrongCommand`, :exc:`~epuck.comm.CommError`
 
     .. method:: get_turning_switch()
 
@@ -248,5 +248,72 @@ Příklad::
             * *zoom* -- prokládání fotky
 
         :rtype: dict
+
+    .. method:: get_photo()
+
+        Získat fotku z kamery.
+
+        Fotka je ve formátu, jaký byl zadán metodou
+        :meth:`~Controller.set_camera`. Pokud nebylo nastavení měněno, tak je
+        získána barevná fotka 40x40 pixelů se zoomem 8.
+
+        Pro ulehčení práce s fotkou je vrácena jako instance třídy
+        :class:`Image` z `PIL (Python Imaging Library)
+        <http://www.pythonware.com/products/pil/>`_.
+
+        :return: Fotka z kamery
+        :rtype: :class:`Image`
+
+    .. method:: reset()
+
+        Resetovat robota.
+
+        Proběhne restart robota. Všechno nastavení se anuluje, robot se
+        zastaví.
+
+    .. method:: set_motor_pos(left, right)
+
+        Nastavení čítačů pro krokové motory.
+
+        U obou krokových motorů je možné aktuálnímu pozici kola přiřadit číslo,
+        to pak bude s každým krokem motoru inkrementováno nebo dekrementováno.
+        Pozice se počítají modulo 1000, což je jedna celá obrátka kola.
+
+        Počet vykonaných kroků je možné zjistit odečtením nastavených hodnot od
+        hodnot získaných metodou :meth:`get_motor_pos`.
+
+        :param left: nová hodnota čítače pro levý motor
+        :type left: int
+        :param right: nová hodnota čítače pro levý motor
+        :type right: int
+
+    .. method:: get_motor_pos()
+
+        Získat aktuální hodnotu čítačů krokových motorů.
+
+        U obou krokových motorů je možné aktuálnímu pozici kola přiřadit číslo
+        pomocí metody :meth:`set_motor_pos`, to pak bude s každým krokem motoru
+        inkrementováno nebo dekrementováno. Pozice se počítají modulo 1000, což
+        je jedna celá obrátka kola.
+
+        :return: dvojice hodnot čítačů (levý motor, pravý motor)
+        :rtype: (int, int)
+
+Výjimky
+-------
+
+.. exception:: EPuckError
+
+    Základní výjimka v :mod:`epuck`. Všechny ostatní od ní dědí.
+
+.. exception:: ControllerError
+
+    Chyba při práci s robotem. Například se nepovedlo k robotovi vůbec
+    připojit.
+
+.. exception:: WrongCommand
+
+    Specializace výjimky :exc:`ControllerError`. Uživatel nejspíše zadal špatný
+    příkaz, např. parametry, které jsou mimo povolené rozsahy.
 
 
