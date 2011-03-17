@@ -87,11 +87,14 @@ class AsyncComm(threading.Thread):
 
         # Create a connection to the robot.
         # It is possible to test this class without robot using sockets.
-        if offline and offline_address is not None:
-            self.serial_connection = TestConnection()
-            self.serial_connection.connect(offline_address)
-        else:
-            self.serial_connection = serial.Serial(port, **kwargs)
+        try:
+            if offline and offline_address is not None:
+                self.serial_connection = TestConnection()
+                self.serial_connection.connect(offline_address)
+            else:
+                self.serial_connection = serial.Serial(port, **kwargs)
+        except serial.SerialException as e:
+            raise CommError(e)
 
         # Create a pipe used to interrupt the select call.
         self.interrupt_fd_read, self.interrupt_fd_write = os.pipe()

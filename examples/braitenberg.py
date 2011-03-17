@@ -6,7 +6,7 @@ import time
 import signal
 import sys
 
-from epuck.controller import Controller
+from epuck import Controller
 
 logging.basicConfig(level=logging.DEBUG)
 

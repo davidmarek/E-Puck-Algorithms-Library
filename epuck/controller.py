@@ -65,7 +65,7 @@ class Controller(object):
                 self.comm.start()
             else:
                 self.comm = SyncComm(port, **kwargs)
-        except SerialException as e:
+        except CommError as e:
             raise ControllerError(e)
 
         self.command_index = random.randrange(len(string.printable))
@@ -107,6 +107,7 @@ class Controller(object):
                 return (int(left), int(right))
             except Exception as e:
                 self.logger.error(e)
+                raise ControllerError(e)
 
         command = "E%c\n" % self.command_i
         ret = self.comm.send_command(command, self.command_i, 'e', _parse_response)
@@ -186,6 +187,7 @@ class Controller(object):
                 return int(value)
             except Exception as e:
                 self.logger.error(e)
+                raise ControllerError(e)
 
         command = "C%c\n" % self.command_i
         ret = self.comm.send_command(command, self.command_i, 'c', _parse_response)
@@ -214,6 +216,7 @@ class Controller(object):
                                 'L10'], r))
             except ValueError as e:
                 self.logger.error(e)
+                raise ControllerError(e)
 
         command = "N%c\n" % self.command_i
         ret = self.comm.send_command(command, self.command_i, 'n', _parse_response)
@@ -242,6 +245,7 @@ class Controller(object):
                                 'L10'], r))
             except ValueError as e:
                 self.logger.error(e)
+                raise ControllerError(e)
 
         command = "O%c\n" % self.command_i
         ret = self.comm.send_command(command, self.command_i, 'o', _parse_response)
@@ -287,6 +291,7 @@ class Controller(object):
                 return dict(zip(['mode', 'width', 'height', 'zoom'], r))
             except ValueError as e:
                 self.logger.error(e)
+                raise ControllerError(e)
 
         command = "I%c\n" % self.command_i
         ret = self.comm.send_command(command, self.command_i, 'i', _parse_response)
@@ -300,7 +305,6 @@ class Controller(object):
             width = ord(response[1]) + (ord(response[2]) << 8);
             height = ord(response[3]) + (ord(response[4]) << 8);
             image = response[5:]
-            print "%dx%d" % (width, height)
 
             if mode == self.RGB565_MODE:
                 ret = ""
@@ -313,6 +317,7 @@ class Controller(object):
                     r = int((val & 31) / 31. * 255)
                     ret += struct.pack(data_struct, b, g, r)
                 return Image.fromstring('RGB', (width, height), ret).rotate(90)
+
             elif mode == self.GREYSCALE_MODE:
                 return Image.fromstring('L', (width, height), image).rotate(90)
 
@@ -361,6 +366,7 @@ class Controller(object):
                 return r
             except ValueError as e:
                 self.logger.error(e)
+                raise ControllerError(e)
 
         command = "Q%c\n" % (self.command_i)
         ret = self.comm.send_command(command, self.command_i, 'q', _parse_response)

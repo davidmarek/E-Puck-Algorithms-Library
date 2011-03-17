@@ -29,3 +29,7 @@ class TestConnection(socket.socket):
 
     def write(self, msg):
         self.send(msg)
+
+from async import RequestHandler, AsyncCommError, AsyncComm
+from sync import SyncCommError, SyncComm
+

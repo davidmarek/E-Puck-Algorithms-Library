@@ -1,4 +1,4 @@
-__all__ = ['controller', 'EPuckError']
+__all__ = ['Controller', 'EPuckError', 'ControllerError', 'WrongCommand']
 
 class EPuckError(Exception):
     """Base class exception for this library."""
@@ -14,4 +14,6 @@ class EPuckError(Exception):
 
     def __str__(self):
         return self.message
+
+from controller import ControllerError, WrongCommand, Controller
 
