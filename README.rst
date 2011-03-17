@@ -62,3 +62,41 @@ Příklad použití::
 Po spuštění příkazu je třeba robota restartovat (modré tlačítko na horní
 straně). Teprve pak se začne nahrávat nový firmware.
 
+Příklad
+-------
+::
+
+    #!/usr/bin/env python
+    # -*- coding: utf-8 -*-
+
+    """Go forward, stop in front of an obstacle."""
+
+    import time
+
+    from epuck import Controller
+
+    # Input larger than the threshold means there is an obstacle.
+    threshold = 300
+
+    # Create the controller. Robot is connected to /dev/rfcomm2 and the
+    # communication will be asynchronous.
+    controller = Controller('/dev/rfcomm2', asynchronous=True)
+
+    # Set the speed of left and right wheel to 100.
+    controller.set_speed(100, 100)
+
+    # Ask for the values of proximity sensors
+    sensor_request = controller.get_proximity_sensors()
+    # Wait until the robot returns them.
+    sensor_values = sensor_request.get_response()
+
+    # Continue while there is nothing in front of the front left and front right sensor.
+    while (sensor_values['L10'] < threshold) and (sensor_values['R10'] < threshold):
+        # Wait for a while
+        time.sleep(0.1)
+        # Read new values
+        sensor_request = controller.get_proximity_sensors()
+        sensor_values = sensor_request.get_response()
+
+    # Stop the robot
+    controller.set_speed(0, 0)
