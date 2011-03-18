@@ -6,8 +6,8 @@ Připojení a instalace
 Vytvoření spojení s robotem
 ---------------------------
 
-1. Je třeba mít nainstalované: ``bluez-firmware`` ``bluez-utils`` (``bluez-pin`` nebo něco
-   jiného co se zeptá na heslo, např ``bluez-gnome`` a jeho ``bluetooth-applet``)
+1. Je třeba mít nainstalované: ``bluez-firmware``, ``bluez-utils``, ``bluez-pin`` nebo něco
+   jiného co se zeptá na heslo, např ``bluez-gnome`` a jeho ``bluetooth-applet``.
 
 2. Zjištění adresy robota::
 

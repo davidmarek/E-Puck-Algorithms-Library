@@ -6,7 +6,7 @@ E-puck robot
     :width: 400px
     :height: 300px
     :alt: e-puck robot
-    :class: float-right
+    :align: right
 
 E-puck je miniaturní robot vytvořený pro výukové účely na akademické
 úrovni. Vytvořen byl v Ecole Polytechnique Fédérale de Laussanne. Celý
