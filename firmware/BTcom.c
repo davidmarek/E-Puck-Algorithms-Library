@@ -367,6 +367,8 @@ int main(void) {
 
                         break;
                     case 'A': // read acceleration sensors
+                        buffer[i++] = 0x0c;
+                        buffer[i++] = 0x0;
                         accelero=e_read_acc_spheric();
                         ptr=(char *)&accelero.acceleration;
                         buffer[i++]=(*ptr);
@@ -608,7 +610,7 @@ int main(void) {
                     sprintf(buffer,"a%c,%d,%d,%d\r\n",tmstmp,accx,accy,accz);
                     uart_send_text(buffer);
                 /*	accelero=e_read_acc_spheric();
-                    sprintf(buffer,"a,%f,%f,%f\r\n",accelero.acceleration,accelero.orientation,accelero.inclination);				
+                    sprintf(buffer,"a,%f,%f,%f\r\n",accelero.acceleration,accelero.orientation,accelero.inclination);
                     uart_send_text(buffer);*/
                     break;
                 case 'B': // set body led
