@@ -210,12 +210,12 @@ class AsyncComm(threading.Thread):
                     response = response[1]
                 except IndexError:
                     response = ''
-
-            self.logger.debug('Received response. Code: "%s", timestamp: "%s", response: "%s".' % (code, timestamp, response))
-
-            self._save_response(code, timestamp, response)
         except TypeError:
             raise AsyncCommError("No response received")
+
+        self.logger.debug('Received response. Code: "%s", timestamp: "%s", response: "%s".' % (code, timestamp, response))
+
+        self._save_response(code, timestamp, response)
 
 
     def _read_binary_data(self):

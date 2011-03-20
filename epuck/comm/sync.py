@@ -51,18 +51,21 @@ class SyncComm(object):
         """Read a response."""
         code = self.serial_connection.read(1)
 
-        # Binary data
-        if ord(code) >= 127:
-            ts = ord(self.serial_connection.read(1))
-            response = self._read_binary_data()
-        # Text data
-        else:
-            ts = ord(self.serial_connection.read(1))
-            response = self._read_text_data().split(",", 1)
-            try:
-                response = response[1]
-            except IndexError:
-                response = ''
+        try:
+            # Binary data
+            if ord(code) >= 127:
+                ts = ord(self.serial_connection.read(1))
+                response = self._read_binary_data()
+            # Text data
+            else:
+                ts = ord(self.serial_connection.read(1))
+                response = self._read_text_data().split(",", 1)
+                try:
+                    response = response[1]
+                except IndexError:
+                    response = ''
+        except TypeError:
+            raise SyncCommError("No response received")
 
         self.logger.debug('Received response. Code: "%s", timestamp: "%s", response: "%s".' % (code, ts, response))
 
