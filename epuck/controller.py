@@ -5,6 +5,8 @@ import decorator
 import logging
 import random
 import string
+import struct
+import Image
 
 from comm.async import AsyncComm
 from comm.sync import SyncComm
@@ -77,6 +79,11 @@ class Controller(object):
         self.leds = 8 * [False]
 
         self.logger = logging.getLogger('Controller')
+
+
+    def _binary_command(self, char):
+        """Translate char to -char."""
+        return chr(256 - ord(char))
 
 
     @command
@@ -321,7 +328,7 @@ class Controller(object):
             elif mode == self.GREYSCALE_MODE:
                 return Image.fromstring('L', (width, height), image).rotate(90)
 
-        c = chr(256 - ord("I"))
+        c = self._binary_command("I")
         command = "%c%c%c" % (c, self.command_i, chr(0))
         ret = self.comm.send_command(command, self.command_i, c, _parse_response)
         return ret
@@ -371,6 +378,143 @@ class Controller(object):
         command = "Q%c\n" % (self.command_i)
         ret = self.comm.send_command(command, self.command_i, 'q', _parse_response)
         return ret
+
+
+    @command
+    def get_raw_accelerometer(self):
+        """Read accelerometer data.
+
+        Accelerometer measures acceleration in three axis (x, y, z).
+
+        Returns data as a dict with three keys: 'x', 'y' and 'z'.
+
+        """
+        def _parse_response(response):
+            try:
+                r = dict(zip(['x', 'y', 'z'], map(int, response.strip().split(','))))
+                return r
+            except ValueError as e:
+                self.logger.error(e)
+                raise ControllerError(e)
+
+        command = "A%c\n" % (self.command_i)
+        ret = self.comm.send_command(command, self.command_i, 'a', _parse_response)
+        return ret
+
+    @command
+    def get_accelerometer(self):
+        """Read the acceleration vector in spherical coords.
+
+        Three values can be computed from the acceleration sensors:
+        acceleration, orientation and inclination. The returned value is a dict
+        with these three keys.
+
+        Keys:
+
+            acceleration - length of the vector = intensity of the acceleration
+
+            inclination - inclination angle from the horizontal plane
+
+                0° = e-puck horizontal
+                90° = e-puck vertical
+                180° = e-puck horizontal but upside down
+
+            orientation - orientation of the acceleration in the horizontal
+            plane, zero facing front
+
+                0° = front part lower than rear part
+                90° = left part lower than right part
+                180° = rear part lower than front part
+                270° = right part lower than left part
+
+        """
+        def _parse_response(response):
+            try:
+                acceleration = struct.unpack('<f', response[:4])[0]
+                orientation = struct.unpack('<f', response[4:8])[0]
+                inclination = struct.unpack('<f', response[8:12])[0]
+                return {'acceleration': acceleration, 'orientation':
+                    orientation, 'inclination': inclination}
+            except struct.error as e:
+                self.logger.error(e)
+                raise ControllerError(e)
+
+        c = self._binary_command("A")
+        command = "%c%c%c" % (c, self.command_i, chr(0))
+        ret = self.comm.send_command(command, self.command_i, c, _parse_response)
+        return ret
+
+
+    @command
+    def calibrate_sensors(self):
+        """Calibrate proximity sensors.
+
+        Remove any objects in sensors range.
+
+        """
+        command = "K%c\n" % (self.command_i)
+        ret = self.comm.send_command(command, self.command_i, 'k')
+        return ret
+
+
+    @command
+    def stop(self):
+        """Stop the robot.
+
+        Stop the motors and turn off all leds.
+
+        """
+        command = "S%c\n" % (self.command_i)
+        ret = self.comm.send_command(command, self.command_i, 's')
+        return ret
+
+    @command
+    def play_sound(self, sound_no):
+        """Play sound.
+
+        The robot is capable of playing 5 sounds, their numbers are:
+
+            1. "haa"
+            2. "spaah"
+            3. "ouah"
+            4. "yaouh"
+            5. "wouaaaaaaaah"
+
+        Any other number will turn the sound system off (and get rid of the
+        white noise).
+
+        """
+        command = "T%c,%d\n" % (self.command_i, sound_no)
+        ret = self.comm.send_command(command, self.command_i, 't')
+        return ret
+
+
+    @command
+    def get_volume(self):
+        """Read volumes from microphones.
+
+        There are three microphones on the top of the robot.
+        The placement of microphones:
+
+            MIC 0 -- right side
+            MIC 1 -- left side
+            MIC 2 -- back
+
+        The returned value is a tuple of three volumes.
+
+        """
+        def _parse_response(response):
+            try:
+                r = map(int, response.strip().split(','))
+                return r
+            except ValueError as e:
+                self.logger.error(e)
+                raise ControllerError(e)
+
+        command = "U%c\n" % (self.command_i)
+        ret = self.comm.send_command(command, self.command_i, 'u', _parse_response)
+        return ret
+
 
 
 # Test the module.
