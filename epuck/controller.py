@@ -505,7 +505,7 @@ class Controller(object):
         """
         def _parse_response(response):
             try:
-                r = map(int, response.strip().split(','))
+                r = dict(zip(['R', 'L', 'B'], map(int, response.strip().split(','))))
                 return r
             except ValueError as e:
                 self.logger.error(e)
