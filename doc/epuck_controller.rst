@@ -63,6 +63,12 @@ Třída :class:`Controller`
     (další podrobnosti v dokumentaci třídy
     :class:`~epuck.comm.RequestHandler`).
 
+    .. note::
+        V této dokumentaci jsou popsány návratové hodnoty tak, jak je vrátí
+        přímo příkaz při synchronní komunikaci, anebo metoda
+        :meth:`~epuck.comm.RequestHandler.get_response` třídy
+        :class:`~epuck.comm.RequestHandler` při komunikaci asynchronní.
+
     :param port: cesta k portu, kde je e-puck připojen (např. :file:`/dev/rfcomm2`)
     :type port: string
     :param asynchronous: zda-li má být použita asynchronní komunikace.
@@ -72,13 +78,6 @@ Třída :class:`Controller`
     :param max_tries: maximální počet pokusů o zaslání příkazu (asynchronní komunikace)
     :type max_tries: int
     :raise: :exc:`~epuck.ControllerError`
-
-    .. note::
-
-        V této dokumentaci jsou popsány návratové hodnoty tak, jak je vrátí
-        přímo příkaz při synchronní komunikaci, anebo metoda
-        :meth:`~epuck.comm.RequestHandler.get_response` třídy
-        :class:`~epuck.comm.RequestHandler` při komunikaci asynchronní.
 
     .. method:: set_speed(left, right)
 
@@ -232,6 +231,7 @@ Třída :class:`Controller`
         :type height: int
         :param zoom: velikost prokládání fotografie
         :type zoom: int
+        :raise: :exc:`~epuck.comm.CommError`, :exc:`~epuck.WrongCommand`
 
     .. method:: get_camera()
 
@@ -248,6 +248,7 @@ Třída :class:`Controller`
             * *zoom* -- prokládání fotky
 
         :rtype: dict
+        :raise: :exc:`~epuck.comm.CommError`
 
     .. method:: get_photo()
 
@@ -263,6 +264,7 @@ Třída :class:`Controller`
 
         :return: Fotka z kamery
         :rtype: :class:`Image`
+        :raise: :exc:`~epuck.comm.CommError`
 
     .. method:: reset()
 
@@ -270,6 +272,8 @@ Třída :class:`Controller`
 
         Proběhne restart robota. Všechno nastavení se anuluje, robot se
         zastaví.
+
+        :raise: :exc:`~epuck.comm.CommError`
 
     .. method:: set_motor_pos(left, right)
 
@@ -286,6 +290,7 @@ Třída :class:`Controller`
         :type left: int
         :param right: nová hodnota čítače pro levý motor
         :type right: int
+        :raise: :exc:`~epuck.comm.CommError`
 
     .. method:: get_motor_pos()
 
@@ -298,6 +303,113 @@ Třída :class:`Controller`
 
         :return: dvojice hodnot čítačů (levý motor, pravý motor)
         :rtype: (int, int)
+        :raise: :exc:`~epuck.comm.CommError`
+
+    .. method:: get_raw_accelerometer()
+
+        Získat vektor akcelerace.
+
+        Vektor se skládá ze složek x, y a z. Vrácená data jsou uložena ve
+        slovníku, klíčem je vždy směr ("x", "y" nebo "z"). Pro získání
+        praktičtějších dat viz :meth:`get_accelerometer`.
+
+        :return: slovník se třemi složkami vektoru akcelerace (klíče jsou "x", "y" a "z")
+        :rtype: dict of ints
+        :raise: :exc:`~epuck.comm.CommError`
+
+    .. method:: get_accelerometer()
+
+        Získat data z akcelerometru ve sférických souřadnicích.
+
+        Robot z vektoru akcelerometru vypočítá tři veličiny, s kterými se lépe
+        pracuje. Jsou jimi zrychlení, náklon a orientace. Všechny tři jsou
+        vyjádřeny ve stupních. Jejich význam je následující:
+
+        Akcelerace
+            Velikost vektoru = intenzita zrychlení
+
+        Náklon
+            * 0° -- e-puck je horizontálně
+            * 90° -- e-puck je vertikálně
+            * 180° -- e-puck je horizontálně, ale vzhůru nohama
+
+        Orientace -- odklon vektoru od horizontální roviny, 0° míří dopředu
+            * 0° -- přední část níže než zadní
+            * 90° -- levá část níže než pravá
+            * 180° -- zadní část níže než přední
+            * 270° -- pravá část níže než levá
+
+        .. note:: Uvedené hodnoty veličin byly získány z dokumentace knihovny
+            pro firmware e-puck robota. Při testech ne vždy odpovídaly realitě,
+            proto je důležité si důkladně vyzkoušet jaké hodnoty robot vykazuje při
+            různých činnostech a vytvořit si vlastní závěry.
+
+        :return: slovník se třemi veličinami získanými z vektoru akcelerace. Klíče jsou:
+
+            * acceleration -- akcelerace
+            * inclination -- náklon
+            * orientation -- orientace
+        :rtype: dict of floats
+        :raise: :exc:`~epuck.comm.CommError`
+
+    .. method:: calibrate_sensors()
+
+        Kalibrace IR senzorů.
+
+        Pro kalibraci IR senzorů je nutné přesvědčit se, že v dosahu senzorů
+        není žádná překážka. Kalibrace probíhá vždy po zapnutí robota, tedy
+        není nutné ji pouštět manuálně, pouze pokud by senzory vykazovaly
+        nějaké závažnější odchylky v naměřených hodnotách.
+
+        :raise: :exc:`~epuck.comm.CommError`
+
+    .. method:: stop()
+
+        Zastavit robota.
+
+        Dojde k zastavení motorů robota a k vypnutí všech LED.
+
+        :raise: :exc:`~epuck.comm.CommError`
+
+    .. method:: play_sound(sound_no)
+
+        Přehrát zvuk.
+
+        V robotovi je uloženo 5 zvuků ve formátu wav. Parametr sound_no
+        označuje číslo zvuku, který se má přehrát:
+
+        1. "haa"
+        2. "spaah"
+        3. "ouah"
+        4. "yaouh"
+        5. "wouaaaaaaaah"
+
+        Dle názvů je jasné o jaké zvuky se jedná. Jde o citoslovce ukazující,
+        že autoři mají smysl pro humor. Pokud bude zadáno jiné číslo, tak dojde
+        k vypnutí speakeru. Tím pádem také přestane šum, který zůstane hrát po
+        přehraném zvuku.
+
+        :param sound_no: číslo označující zvuk, který se má přehrát
+        :type sound_no: int
+        :raise: :exc:`~epuck.comm.CommError`
+
+    .. method:: get_volume()
+
+        Získat úrovně hlasitosti z mikrofonů.
+
+        Robot disponuje třemi mikrofony rozmístěnými na horní straně. Jsou
+        rozmístěny vlevo, vpravo a vzadu. Protože samotná nahraná data jsou
+        příliš velká, tak robot dokáže pouze poslat úroveň hlasitosti zvuků
+        snímaných jednotlivými mikrofony.
+
+        Data jsou vrácena jako slovník, jednotlivé mikrofony jsou označeny
+        zkratkou jejich umístění ("R", "L", "B").
+
+        :return: úroveň hlasitosti na jednotlivých mikrofonech, klíče jsou "R",
+            "L", "B".
+        :rtype: dict of ints
+        :raise: :exc:`~epuck.comm.CommError`
+
 
 Výjimky
 -------
