@@ -11,11 +11,12 @@ E-puck knihovna slouží pro komunikaci s e-puck robotem z pythonu.
 Obsah:
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 3
 
     e-puck
     install
     epuck_controller
+    epuck_comm
 
 
 Rejstřík a hledání
