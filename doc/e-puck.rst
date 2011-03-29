@@ -1,10 +1,10 @@
 E-puck robot
 ============
 
-.. image:: http://www.e-puck.org/images/stories/epuck-look.jpg
+.. image:: _static/e-puck.jpg
     :scale: 50 %
-    :width: 400px
-    :height: 300px
+    :width: 264px
+    :height: 261px
     :alt: e-puck robot
     :align: right
 
