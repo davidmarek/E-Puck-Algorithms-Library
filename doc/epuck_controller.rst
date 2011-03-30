@@ -281,7 +281,7 @@ Třída :class:`Controller`
 
         U obou krokových motorů je možné aktuálnímu pozici kola přiřadit číslo,
         to pak bude s každým krokem motoru inkrementováno nebo dekrementováno.
-        Pozice se počítají modulo 1000, což je jedna celá obrátka kola.
+        Pozice se počítají jako 16bitové číslo se znaménkem.
 
         Počet vykonaných kroků je možné zjistit odečtením nastavených hodnot od
         hodnot získaných metodou :meth:`get_motor_pos`.
@@ -298,8 +298,8 @@ Třída :class:`Controller`
 
         U obou krokových motorů je možné aktuálnímu pozici kola přiřadit číslo
         pomocí metody :meth:`set_motor_pos`, to pak bude s každým krokem motoru
-        inkrementováno nebo dekrementováno. Pozice se počítají modulo 1000, což
-        je jedna celá obrátka kola.
+        inkrementováno nebo dekrementováno. Pozice se počítají jako 16bitové
+        číslo se znaménkem.
 
         :return: dvojice hodnot čítačů (levý motor, pravý motor)
         :rtype: (int, int)
