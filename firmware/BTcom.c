@@ -791,7 +791,7 @@ int main(void) {
                     uart_send_text(buffer);
                     break;
                 case 'V': // get version information
-                    sprintf(buffer, "v%c, DM Version 0.2 2011\r\n", tmstmp);
+                    sprintf(buffer, "v%c, DM Version 0.3 2011\r\n", tmstmp);
                     uart_send_text(buffer);
                     break;
                 case 'W': // read Devantec ultrasonic range sensor or Sharp Ir sensor (optional)
