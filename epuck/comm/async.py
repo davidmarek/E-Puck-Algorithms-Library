@@ -9,7 +9,7 @@ import serial
 import threading
 import time
 
-from epuck.comm import CommError, TestConnection
+from epuck.comm import CommError
 
 
 class AsyncCommError(CommError):
@@ -81,18 +81,14 @@ class AsyncComm(threading.Thread):
 
     """
 
-    def __init__(self, port, timeout=0.5, offline=False, offline_address=None, max_tries=10, **kwargs):
+    def __init__(self, port, timeout=0.5, max_tries=10, **kwargs):
         threading.Thread.__init__(self)
         self.daemon = True
 
         # Create a connection to the robot.
         # It is possible to test this class without robot using sockets.
         try:
-            if offline and offline_address is not None:
-                self.serial_connection = TestConnection()
-                self.serial_connection.connect(offline_address)
-            else:
-                self.serial_connection = serial.Serial(port, **kwargs)
+            self.serial_connection = serial.Serial(port, **kwargs)
         except serial.SerialException as e:
             raise CommError(e)
 

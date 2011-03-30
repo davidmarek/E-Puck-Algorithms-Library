@@ -4,7 +4,7 @@
 import logging
 import serial
 
-from epuck.comm import CommError, TestConnection
+from epuck.comm import CommError
 
 
 class SyncCommError(CommError):
@@ -19,14 +19,13 @@ class SyncComm(object):
 
     """
 
-    def __init__(self, port, offline=False, offline_address=None, **kwargs):
+    def __init__(self, port, timeout=0.5, **kwargs):
         # Create a connection to the robot.
         # It is possible to test this class without robot using sockets.
-        if offline and offline_address is not None:
-            self.serial_connection = TestConnection()
-            self.serial_connection.connect(offline_address)
-        else:
-            self.serial_connection = serial.Serial(port, **kwargs)
+        try:
+            self.serial_connection = serial.Serial(port, timeout=timeout, **kwargs)
+        except serial.SerialException as e:
+            raise CommError(e)
 
         self.logger = logging.getLogger('SyncComm')
 

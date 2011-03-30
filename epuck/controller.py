@@ -51,22 +51,24 @@ class Controller(object):
     GREYSCALE_MODE = 0
     RGB565_MODE = 1
 
-    def __init__(self, port, asynchronous=False, **kwargs):
+    def __init__(self, port, asynchronous=False, timeout=0.5, max_tries=10):
         """Create new controller.
 
         Arguments:
             port -- The device where e-puck robot is connected (e.g. /dev/rfcomm0).
             asynchronous -- Set True to use asynchronous communication.
                 Synchronous communication is default.
+            timeout -- How long to wait before the message is sent again.
+            max_tries -- How many tries before raising an exception (in async).
 
         """
 
         try:
             if asynchronous:
-                self.comm = AsyncComm(port, **kwargs)
+                self.comm = AsyncComm(port, timeout, max_tries)
                 self.comm.start()
             else:
-                self.comm = SyncComm(port, **kwargs)
+                self.comm = SyncComm(port, timeout)
         except CommError as e:
             raise ControllerError(e)
 
