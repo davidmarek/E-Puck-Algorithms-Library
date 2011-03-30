@@ -54,7 +54,7 @@ Asynchronní
 
 Vykonání příkazu vypadá velmi podobně, avšak důležitá změna je, že metody
 nevrací výsledek (protože možná ještě žádný není), ale pouze
-:class:`RequestHandler`. Metoda :meth:`RequestHandler.get_response` se chová v podstatě dost
+:class:`RequestHandler`. Metoda :meth:`~RequestHandler.get_response` se chová v podstatě dost
 podobně jako synchronní komunikace. Protože vždy zaručuje, že vrátí výsledek,
 tak se nejprve podívá, zda-li už byl přijat, pokud ne, tak na něj počká.
 
@@ -104,3 +104,19 @@ Odpověd u asynchronní komunikace
         :returns: odpověď od robota, přesný druh odpovědi k nalezení v
             dokumentaci třídy :class:`~epuck.Controller`
         :rtype: závisí na zaslaném příkazu
+
+Výjimky
+-------
+
+.. exception:: CommError
+
+    Chyba při komunikaci s robotem. Nejčastější příčinou je, že robot
+    neodpovídá.
+
+.. exception:: SyncCommError
+
+    Chyba při synchronní komunikaci s robotem.
+
+.. exception:: AsyncCommError
+
+    Chyba při asynchronní komunikaci s robotem.
