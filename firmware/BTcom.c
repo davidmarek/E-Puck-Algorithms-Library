@@ -147,7 +147,7 @@ static void init_lvd(){
 /* \brief The main function of the programm */
 int main(void) {
 	char c,c1,c2,wait_cam=0,tmstmp, last_tmstmp;
-	int	i,j,n,speedr,speedl,positionr,positionl,LED_nbr,LED_action,accx,accy,accz,selector,sound;
+	int	i,j,n,speedr=0,speedl=0,positionr,positionl,LED_nbr,LED_action,accx,accy,accz,selector,sound;
 	int cam_mode,cam_width,cam_heigth,cam_zoom,cam_size;
 	int listening = 0;
 	static char first=0;
