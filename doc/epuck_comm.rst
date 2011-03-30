@@ -41,3 +41,66 @@ metody :meth:`~epuck.Controller.get_speed` bude zablokováno vykonávání dalš
 příkazů dokud robot nepošle svou rychlost. Běh programu tedy je přerušován při
 každém poslání příkazu, navíc se může stát, že robot na příkaz neodpoví a pak
 je třeba čekat než vyprší timeout a postarat se o nové zaslání příkazu.
+
+Asynchronní
+^^^^^^^^^^^
+::
+
+    >>> from epuck import Controller
+    >>> controller = Controller('/dev/rfcomm0', asynchronous=True)
+    >>> request = controller.get_speed()
+    >>> request.get_response()
+    (0,0)
+
+Vykonání příkazu vypadá velmi podobně, avšak důležitá změna je, že metody
+nevrací výsledek (protože možná ještě žádný není), ale pouze
+:class:`RequestHandler`. Metoda :meth:`RequestHandler.get_response` se chová v podstatě dost
+podobně jako synchronní komunikace. Protože vždy zaručuje, že vrátí výsledek,
+tak se nejprve podívá, zda-li už byl přijat, pokud ne, tak na něj počká.
+
+Pokud není výsledek příkazu potřeba, například po volání metody
+:meth:`~epuck.Controller.set_speed`, tak je možné návratovou hodnotu ignorovat.
+
+Dalším případem je volání příkazů v aplikaci, která provádí i něco jiného, než
+jen ovládání robota (např. GUI). Pak je možné metodou
+:meth:`~epuck.comm.RequestHandler.response_received` pouze zkontrolat, zda odpověď už přišla. A
+případně ji zpracovat::
+
+    >>> request = controller.get_speed()
+    >>> if request.response_received():
+    ...     value = request.get_response()
+    ...
+
+Odpověd u asynchronní komunikace
+--------------------------------
+
+.. class:: RequestHandler
+
+    Jedná se o objekt reprezentující odpověď na příkaz zaslaný robotovi při
+    asynchronní komunikaci. U asynchronní komunikace je důležité, aby poslání
+    příkazu nezablokovalo vlákno, v kterém byl příkaz poslán. Proto není možné
+    čekat na odpověď. Uživatel ovšem nezůstane bez odpovědi. Příkaz mu vrátí
+    právě tento handler, pomocí kterého dokáže zjistit, zda-li už odpověď došla
+    a případně i získat onu odpověď.
+
+    .. method:: response_received()
+
+        Slouží ke kontrole, zda-li už došla odpověď od robota. Neblokuje vlákno
+        a nevrací odpověď. K jejímu získání slouží metoda :meth:`get_response`.
+
+        :returns: zda-li došla odpověď od robota
+        :rtype: bool
+
+    .. method:: get_response()
+
+        Zkontroluje, zda-li došla odpověď, pokud ano, tak ji vrátí, v opačném
+        případě počká dokud nedorazí a pak ji vrátí. Z toho důvodu
+        zablokuje vlákno, pokud ještě odpověď nedošla.
+
+        Pokud je možné pokračovat ve vykonávání program bez této odpovědi, tak
+        se doporučuje nejprve kontrolovat přítomnost odpovědi pomocí metody
+        :meth:`response_received`.
+
+        :returns: odpověď od robota, přesný druh odpovědi k nalezení v
+            dokumentaci třídy :class:`~epuck.Controller`
+        :rtype: závisí na zaslaném příkazu
