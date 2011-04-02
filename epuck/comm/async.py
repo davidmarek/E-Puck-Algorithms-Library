@@ -97,9 +97,9 @@ class AsyncComm(threading.Thread):
 
         # Create queues for requests and responses.
         # Stored are only the requests.
-        self.request_queue = Queue.Queue()
+        self.request_queue = Queue.Queue(100)
         # Stored are tuples (time of insertion, request).
-        self.response_queue = Queue.PriorityQueue()
+        self.response_queue = Queue.PriorityQueue(100)
 
         # Requests that are older than timeout seconds must be sent again.
         self.timeout = timeout
@@ -131,21 +131,18 @@ class AsyncComm(threading.Thread):
             input_sockets = [self.serial_connection, self.interrupt_fd_read]
             input_sockets, _, _ = select.select(input_sockets, [], [], self.timeout)
 
-            try:
-                if len(input_sockets) == 0:
-                    # Timeout was reached. Check the requests.
-                    self._check_requests_timeout()
+            if len(input_sockets) == 0:
+                # Timeout was reached. Check the requests.
+                self._check_requests_timeout()
 
-                for i in input_sockets:
-                    # The user wants to send a command.
-                    if i == self.interrupt_fd_read:
-                        self._process_interrupt()
+            for i in input_sockets:
+                # The user wants to send a command.
+                if i == self.interrupt_fd_read:
+                    self._process_interrupt()
 
-                    # The robot is sending response.
-                    elif i == self.serial_connection:
-                        self._read_response()
-            except AsyncCommError as e:
-                self.logger.error(e)
+                # The robot is sending response.
+                elif i == self.serial_connection:
+                    self._read_response()
 
     def _stop_main_loop(self):
         """Stop the main loop."""
@@ -187,7 +184,10 @@ class AsyncComm(threading.Thread):
         self.serial_connection.write(command)
 
         # Add the request to another queue to wait for response.
-        self.response_queue.put((time.time(), request))
+        try:
+            self.response_queue.put((time.time(), request), False)
+        except Queue.Full:
+            raise AsyncCommError("Too many requests.")
 
     def _read_response(self):
         """Read a response and save it."""
@@ -237,11 +237,9 @@ class AsyncComm(threading.Thread):
 
     def _save_response(self, code, timestamp, response):
         """Find the right request and give it the response."""
-        try:
-            request = self._get_request(code, timestamp)
+        request = self._get_request(code, timestamp)
+        if request is not None:
             request.set_response(response)
-        except AsyncCommError as e:
-            self.logger.error(e)
 
     def _get_request(self, code, timestamp):
         """Find the right request for given response code."""
@@ -255,7 +253,7 @@ class AsyncComm(threading.Thread):
                 # hasn't been sent.
                 self._enqueue_request(first_request)
 
-        raise AsyncCommError("No request found for received response.")
+        return None
 
     def _check_requests_timeout(self):
         """Check if requests are not waiting too long.
@@ -275,12 +273,18 @@ class AsyncComm(threading.Thread):
                 else:
                     raise AsyncCommError("Max limit exceeded.")
             else:
-                self.response_queue.put((sent_time, request))
+                try:
+                    self.response_queue.put((sent_time, request), False)
+                except Queue.Full:
+                    raise AsyncCommError("Too many requests.")
                 old_requests = False
 
     def _enqueue_request(self, request):
         "Put the request into the request_queue and notify the main loop."""
-        self.request_queue.put(request)
+        try:
+            self.request_queue.put(request, False)
+        except Queue.Full:
+            raise AsyncCommError("Too many requests.")
         os.write(self.interrupt_fd_write, "NEW\n")
 
 
