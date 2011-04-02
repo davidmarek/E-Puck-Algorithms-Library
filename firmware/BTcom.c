@@ -701,7 +701,6 @@ int main(void) {
                     uart_send_text(buffer);
                     break;
                 case 'K':  // calibrate proximity sensors
-                    uart_send_static_text("k, Starting calibration - Remove any object in sensors range\r\n");
                     e_calibrate_ir();
                     sprintf(buffer, "k%c\r\n", tmstmp);
                     uart_send_text(buffer);
