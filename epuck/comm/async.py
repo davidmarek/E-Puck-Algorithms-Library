@@ -196,7 +196,7 @@ class AsyncComm(threading.Thread):
         try:
             # Binary data
             if ord(code) >= 127:
-                timestamp = self.serial_connection.read(1)
+                timestamp = ord(self.serial_connection.read(1))
                 response = self._read_binary_data()
             # Text data
             else:
