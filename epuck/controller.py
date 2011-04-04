@@ -89,18 +89,18 @@ class Controller(object):
 
 
     @command
-    def set_speed(self, left, right):
+    def set_speed(self, left, right, callback=lambda x: x):
         """Set the speed of the motors."""
         if (-self.MAX_SPEED <= left <= self.MAX_SPEED) \
         and (-self.MAX_SPEED <= right <= self.MAX_SPEED):
             command = "D%c,%d,%d\n" % (self.command_i, left, right)
-            ret = self.comm.send_command(command, self.command_i, 'd')
+            ret = self.comm.send_command(command, self.command_i, 'd', callback)
             return ret
         else:
             raise WrongCommand("Speed is out of bounds.")
 
     @command
-    def get_speed(self):
+    def get_speed(self, callback=lambda x: x):
         """Get speed of motors.
 
         The speed is measured in pulses per second, one pulse is
@@ -113,7 +113,7 @@ class Controller(object):
         def _parse_response(response):
             try:
                 left, right = response.strip().split(',')
-                return (int(left), int(right))
+                return callback((int(left), int(right)))
             except Exception as e:
                 self.logger.error(e)
                 raise ControllerError(e)
@@ -124,7 +124,7 @@ class Controller(object):
 
 
     @command
-    def set_body_led(self, value):
+    def set_body_led(self, value, callback=lambda x: x):
         """Set the green body LED's status.
 
         Arguments:
@@ -132,12 +132,12 @@ class Controller(object):
 
         """
         command = "B%c,%d\n" % (self.command_i, 1 if value else 0)
-        ret = self.comm.send_command(command, self.command_i, 'b')
+        ret = self.comm.send_command(command, self.command_i, 'b', callback)
         return ret
 
 
     @command
-    def set_front_led(self, value):
+    def set_front_led(self, value, callback=lambda x: x):
         """Set the bright front LED's status.
 
         Arguments:
@@ -145,12 +145,12 @@ class Controller(object):
 
         """
         command = "F%c,%d\n" % (self.command_i, 1 if value else 0)
-        ret = self.comm.send_command(command, self.command_i, 'f')
+        ret = self.comm.send_command(command, self.command_i, 'f', callback)
         return ret
 
 
     @command
-    def set_leds(self, value):
+    def set_leds(self, value, callback=lambda x: x):
         """Set the all LEDs with one command.
 
         Arguments:
@@ -158,12 +158,12 @@ class Controller(object):
 
         """
         command = "L%c,9,%d\n" % (self.command_i, 1 if value else 0)
-        ret = self.comm.send_command(command, self.command_i, 'l')
+        ret = self.comm.send_command(command, self.command_i, 'l', callback)
         return ret
 
 
     @command
-    def set_led(self, led_no, value):
+    def set_led(self, led_no, value, callback=lambda x: x):
         """Set the LED's status.
 
         There are 8 LEDs on the e-puck robot. The LED number 0 is the frontal
@@ -176,14 +176,14 @@ class Controller(object):
         """
         if (0 <= led_no <= 7):
             command = "L%c,%d,%d\n" % (self.command_i, led_no, 1 if value else 0)
-            ret = self.comm.send_command(command, self.command_i, 'l')
+            ret = self.comm.send_command(command, self.command_i, 'l', callback)
             return ret
         else:
             raise WrongCommand("Led number is out of the bounds.")
 
 
     @command
-    def get_turning_switch(self):
+    def get_turning_switch(self, callback=lambda x: x):
         """Get the position of the rotating 16 positions switch.
 
         Position 0 correspond to the arrow pointing on the right when looking
@@ -193,7 +193,7 @@ class Controller(object):
         def _parse_response(response):
             try:
                 value = response.strip()
-                return int(value)
+                return callback(int(value))
             except Exception as e:
                 self.logger.error(e)
                 raise ControllerError(e)
@@ -204,7 +204,7 @@ class Controller(object):
 
 
     @command
-    def get_proximity_sensors(self):
+    def get_proximity_sensors(self, callback=lambda x: x):
         """Get the values of the 8 proximity sensors.
 
         The 12 bit values of the 8 proximity sensors. For left and right side
@@ -221,8 +221,8 @@ class Controller(object):
         def _parse_response(response):
             try:
                 r = map(int, response.split(','))
-                return dict(zip(['R10', 'R45', 'R90', 'RB', 'LB', 'L90', 'L45',
-                                'L10'], r))
+                return callback(dict(zip(['R10', 'R45', 'R90', 'RB', 'LB', 'L90', 'L45',
+                                'L10'], r)))
             except ValueError as e:
                 self.logger.error(e)
                 raise ControllerError(e)
@@ -233,7 +233,7 @@ class Controller(object):
 
 
     @command
-    def get_ambient_sensors(self):
+    def get_ambient_sensors(self, callback=lambda x: x):
         """Get the values of the 8 ambient light sensors.
 
         The 12 bit values of the 8 ambient light sensors. For left and right
@@ -250,8 +250,8 @@ class Controller(object):
         def _parse_response(response):
             try:
                 r = map(int, response.split(','))
-                return dict(zip(['R10', 'R45', 'R90', 'RB', 'LB', 'L90', 'L45',
-                                'L10'], r))
+                return callback(dict(zip(['R10', 'R45', 'R90', 'RB', 'LB', 'L90', 'L45',
+                                'L10'], r)))
             except ValueError as e:
                 self.logger.error(e)
                 raise ControllerError(e)
@@ -262,7 +262,7 @@ class Controller(object):
 
 
     @command
-    def set_camera(self, mode, width, height, zoom):
+    def set_camera(self, mode, width, height, zoom, callback=lambda x: x):
         """Set the camera properties.
 
         If the common denominator of zoom factor is 4 or 2, part of the
@@ -278,13 +278,13 @@ class Controller(object):
         """
         if 0 < width <= 640 and 0 < height <= 480 and mode in (self.GREYSCALE_MODE, self.RGB565_MODE):
             command = "J%c,%d,%d,%d,%d\n" % (self.command_i, mode, width, height, zoom)
-            ret = self.comm.send_command(command, self.command_i, 'j')
+            ret = self.comm.send_command(command, self.command_i, 'j', callback)
             return ret
         else:
             raise WrongCommand("Wrong camera properties.")
 
     @command
-    def get_camera(self):
+    def get_camera(self, callback=lambda x: x):
         """Get the camera properties.
 
         Returns a dictionary with camera properties. The properites are:
@@ -297,7 +297,7 @@ class Controller(object):
         def _parse_response(response):
             try:
                 r = map(int, response.strip().split(','))
-                return dict(zip(['mode', 'width', 'height', 'zoom'], r))
+                return callback(dict(zip(['mode', 'width', 'height', 'zoom'], r)))
             except ValueError as e:
                 self.logger.error(e)
                 raise ControllerError(e)
@@ -307,7 +307,7 @@ class Controller(object):
         return ret
 
     @command
-    def get_photo(self):
+    def get_photo(self, callback=lambda x: x):
         """Take a photo."""
         def _parse_response(response):
             mode = ord(response[0])
@@ -325,10 +325,10 @@ class Controller(object):
                     g = int(((val >> 5) & 63) / 63. * 255)
                     r = int((val & 31) / 31. * 255)
                     ret += struct.pack(data_struct, b, g, r)
-                return Image.fromstring('RGB', (width, height), ret).rotate(90)
+                return callback(Image.fromstring('RGB', (width, height), ret).rotate(90))
 
             elif mode == self.GREYSCALE_MODE:
-                return Image.fromstring('L', (width, height), image).rotate(90)
+                return callback(Image.fromstring('L', (width, height), image).rotate(90))
 
         c = self._binary_command("I")
         command = "%c%c%c" % (c, self.command_i, chr(0))
@@ -337,15 +337,15 @@ class Controller(object):
 
 
     @command
-    def reset(self):
+    def reset(self, callback=lambda x: x):
         """Reset the robot."""
         command = "R%c\n" % self.command_i
-        ret = self.comm.send_command(command, self.command_i, 'r')
+        ret = self.comm.send_command(command, self.command_i, 'r', callback)
         return ret
 
 
     @command
-    def set_motor_pos(self, left, right):
+    def set_motor_pos(self, left, right, callback=lambda x: x):
         """Set motor position.
 
         The robot has two step motors. It is possible to set initial positions
@@ -360,11 +360,11 @@ class Controller(object):
 
         """
         command = "P%c,%d,%d\n" % (self.command_i, left, right)
-        ret = self.comm.send_command(command, self.command_i, 'p')
+        ret = self.comm.send_command(command, self.command_i, 'p', callback)
         return ret
 
     @command
-    def get_motor_pos(self):
+    def get_motor_pos(self, callback=lambda x: x):
         """Read motor position.
 
         Returns two values, position of left and right motor.
@@ -372,7 +372,7 @@ class Controller(object):
         def _parse_response(response):
             try:
                 r = map(int, response.strip().split(','))
-                return r
+                return callback(r)
             except ValueError as e:
                 self.logger.error(e)
                 raise ControllerError(e)
@@ -383,7 +383,7 @@ class Controller(object):
 
 
     @command
-    def get_raw_accelerometer(self):
+    def get_raw_accelerometer(self, callback=lambda x: x):
         """Read accelerometer data.
 
         Accelerometer measures acceleration in three axis (x, y, z).
@@ -394,7 +394,7 @@ class Controller(object):
         def _parse_response(response):
             try:
                 r = dict(zip(['x', 'y', 'z'], map(int, response.strip().split(','))))
-                return r
+                return callback(r)
             except ValueError as e:
                 self.logger.error(e)
                 raise ControllerError(e)
@@ -404,7 +404,7 @@ class Controller(object):
         return ret
 
     @command
-    def get_accelerometer(self):
+    def get_accelerometer(self, callback=lambda x: x):
         """Read the acceleration vector in spherical coords.
 
         Three values can be computed from the acceleration sensors:
@@ -435,8 +435,8 @@ class Controller(object):
                 acceleration = struct.unpack('<f', response[:4])[0]
                 orientation = struct.unpack('<f', response[4:8])[0]
                 inclination = struct.unpack('<f', response[8:12])[0]
-                return {'acceleration': acceleration, 'orientation':
-                    orientation, 'inclination': inclination}
+                return callback({'acceleration': acceleration, 'orientation':
+                    orientation, 'inclination': inclination})
             except struct.error as e:
                 self.logger.error(e)
                 raise ControllerError(e)
@@ -448,30 +448,30 @@ class Controller(object):
 
 
     @command
-    def calibrate_sensors(self):
+    def calibrate_sensors(self, callback=lambda x: x):
         """Calibrate proximity sensors.
 
         Remove any objects in sensors range.
 
         """
         command = "K%c\n" % (self.command_i)
-        ret = self.comm.send_command(command, self.command_i, 'k')
+        ret = self.comm.send_command(command, self.command_i, 'k', callback)
         return ret
 
 
     @command
-    def stop(self):
+    def stop(self, callback=lambda x: x):
         """Stop the robot.
 
         Stop the motors and turn off all leds.
 
         """
         command = "S%c\n" % (self.command_i)
-        ret = self.comm.send_command(command, self.command_i, 's')
+        ret = self.comm.send_command(command, self.command_i, 's', callback)
         return ret
 
     @command
-    def play_sound(self, sound_no):
+    def play_sound(self, sound_no, callback=lambda x: x):
         """Play sound.
 
         The robot is capable of playing 5 sounds, their numbers are:
@@ -487,12 +487,12 @@ class Controller(object):
 
         """
         command = "T%c,%d\n" % (self.command_i, sound_no)
-        ret = self.comm.send_command(command, self.command_i, 't')
+        ret = self.comm.send_command(command, self.command_i, 't', callback)
         return ret
 
 
     @command
-    def get_volume(self):
+    def get_volume(self, callback=lambda x: x):
         """Read volumes from microphones.
 
         There are three microphones on the top of the robot.
@@ -508,7 +508,7 @@ class Controller(object):
         def _parse_response(response):
             try:
                 r = dict(zip(['R', 'L', 'B'], map(int, response.strip().split(','))))
-                return r
+                return callback(r)
             except ValueError as e:
                 self.logger.error(e)
                 raise ControllerError(e)

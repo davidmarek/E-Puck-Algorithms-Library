@@ -30,6 +30,7 @@ class RequestHandler(object):
         self.response_code = response_code
         self.callback = callback
         self.tries = 0
+        self.error = None
 
         self.response = None
         self.accomplished = threading.Condition()
@@ -55,21 +56,41 @@ class RequestHandler(object):
         self.accomplished.notify()
         self.accomplished.release()
 
+    def set_error(self, error):
+        """Save the exception that occured during communication."""
+        self.error = error
+
+        self.accomplished.acquire()
+        self.accomplished.notify()
+        self.accomplished.release()
+
     def get_response(self):
         """Return the response."""
         if not self.response_received():
             self.join()
-        return self.callback(self.response)
+
+        if self.error is not None:
+            raise self.error
+        else:
+            return self.callback(self.response)
+
 
     def response_received(self):
         """Return whether a response has been received."""
         return self.response is not None
+
+    def error_raised(self):
+        """Return whether an exception occured."""
+        return self.error is not None
 
     def join(self):
         """Wait until the response is received."""
         self.accomplished.acquire()
         self.accomplished.wait()
         self.accomplished.release()
+
+        if self.error is not None:
+            raise self.error
 
 
 class AsyncComm(threading.Thread):
@@ -85,12 +106,11 @@ class AsyncComm(threading.Thread):
         threading.Thread.__init__(self)
         self.daemon = True
 
-        # Create a connection to the robot.
-        # It is possible to test this class without robot using sockets.
         try:
             self.serial_connection = serial.Serial(port, **kwargs)
+            self.serial_connection.write('\r')
         except serial.SerialException as e:
-            raise CommError(e)
+            raise CommError("Wasn't able to create a connection.")
 
         # Create a pipe used to interrupt the select call.
         self.interrupt_fd_read, self.interrupt_fd_write = os.pipe()
@@ -206,8 +226,13 @@ class AsyncComm(threading.Thread):
                     response = response[1]
                 except IndexError:
                     response = ''
-        except TypeError:
-            raise AsyncCommError("No response received")
+        except TypeError as e:
+            raise AsyncCommError("No response received: "+str(e))
+
+        if code == 'z':
+            # Command not found
+            return
+
 
         self.logger.debug('Received response. Code: "%s", timestamp: "%s", response: "%s".' % (code, timestamp, response))
 
@@ -271,12 +296,14 @@ class AsyncComm(threading.Thread):
                     self._enqueue_request(request)
                     self.logger.debug("Timeout exceeded: Sending command again: %s" % request.command)
                 else:
-                    raise AsyncCommError("Max limit exceeded.")
+                    self.logger.error("Max limit exceeded.")
+                    request.set_error(AsyncCommError("Max limit exceeded."))
             else:
                 try:
                     self.response_queue.put((sent_time, request), False)
                 except Queue.Full:
-                    raise AsyncCommError("Too many requests.")
+                    self.logger.error("Too many requests.")
+                    request.error = AsyncCommError("Too many requests.")
                 old_requests = False
 
     def _enqueue_request(self, request):
