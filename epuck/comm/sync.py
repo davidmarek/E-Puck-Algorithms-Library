@@ -24,6 +24,8 @@ class SyncComm(object):
         # It is possible to test this class without robot using sockets.
         try:
             self.serial_connection = serial.Serial(port, timeout=timeout, **kwargs)
+            self.serial_connection.write('\r')
+            self.serial_connection.readline()
         except serial.SerialException as e:
             raise CommError(e)
 
