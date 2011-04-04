@@ -50,7 +50,7 @@ class RequestHandler(object):
         Also notify all waiting for the request.
 
         """
-        self.response = response
+        self.response = self.callback(response)
 
         self.accomplished.acquire()
         self.accomplished.notify()
@@ -71,9 +71,8 @@ class RequestHandler(object):
 
         if self.error is not None:
             raise self.error
-        else:
-            return self.callback(self.response)
 
+        return self.response
 
     def response_received(self):
         """Return whether a response has been received."""
