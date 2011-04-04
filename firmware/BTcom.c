@@ -300,7 +300,6 @@ int main(void) {
 		;
 #endif
 		if (c<0) { // binary mode (big endian)
-			while (c == '\n' || c == '\r') e_getchar_uart1(&c);
             while (e_getchar_uart1(&tmstmp) == 0);
 			i=0;
 			buffer[i++] = c;
@@ -584,10 +583,6 @@ int main(void) {
 			}
 
 		} else if (c>0) { // ascii mode
-			while (c=='\n' || c=='\r') {
-				 e_getchar_uart1(&c);
-            }
-
 			buffer[0]=c;
 			i = 0;
 			do {
@@ -841,7 +836,7 @@ int main(void) {
                     uart_send_text(buffer);
                     break;
                 default:
-                    sprintf(buffer, "z%c,Command not found\r\n", tmstmp);
+                    sprintf(buffer, "z%c,Command %d not found\r\n", tmstmp, c);
                     uart_send_text(buffer);
                     break;
                 }
