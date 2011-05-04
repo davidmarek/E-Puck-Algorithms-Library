@@ -71,6 +71,14 @@ případně ji zpracovat::
     ...     value = request.get_response()
     ...
 
+Občas chceme zavolat nějakou funkci v odpovědi na přišlá data. V takovém
+případě není nutnost kontrolovat, zda-li už přišla odpověď až tak elegantní.
+Příkazy ovšem umožňují i nastavit tzv. callback, funkci, která se zavolá po
+získání odpovědi na příkaz a jako parametr dostane data tak, jak by je vrátila
+metoda :meth:`~RequestHandler.get_response`::
+
+    >>> request = controller.get_speed(callback=fce_zpracujici_odpoved)
+
 Odpověd u asynchronní komunikace
 --------------------------------
 
@@ -104,6 +112,23 @@ Odpověd u asynchronní komunikace
         :returns: odpověď od robota, přesný druh odpovědi k nalezení v
             dokumentaci třídy :class:`~epuck.Controller`
         :rtype: závisí na zaslaném příkazu
+
+    .. method:: error_raised()
+
+        Kontrola, zda-li při vykonání příkazu nevznikla výjimka.
+
+        Výjimka je uložena v atributu `error`. Bude vyhozena pokud se uživatel
+        pokusí přistoupit k odpovědi, anebo zavolá metodu :meth:`join`.
+
+        :returns: zda-li byla vyhozena výjimka
+        :rtype: bool
+
+    .. method:: join()
+
+        Vyčkání na provedení příkazu.
+
+        Zablokuje vykonávání programu dokud nepřijde odpověď na příkaz.
+
 
 Výjimky
 -------
