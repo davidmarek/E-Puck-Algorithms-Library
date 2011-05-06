@@ -309,21 +309,20 @@ int main(void) {
                     switch(-c) {
                     case 'Z':
                         while (e_getchar_uart1(&c1)==0);
-                        if (c1 == 0) {
+                        if (c1 == '0') {
                             e_ad_scan_off();
                             listening = 0;
-                            e_blink_led6();
-                        } else {
+                        } else if (c1 == '1') {
                             e_ad_scan_on();
                             listening = 1;
                             e_blink_led6();
                         }
+                        buffer[i++] = 0;
+                        buffer[i++] = 0;
                         break;
                     case 'z':
-                        buffer[i++] = 0;
-                        buffer[i++] = 0;
-                        if (listening && e_ad_is_array_filled()) {
-
+                        if (listening) {
+                            while (!e_ad_is_array_filled());
                             i = 0;
                             e_blink_led1();
                             e_ad_scan_off();
@@ -347,8 +346,10 @@ int main(void) {
                             }
                             //e_send_uart1_char(buffer,i); // send answer
                             //while(e_uart1_sending());
+                        } else {
+                            buffer[i++] = 0;
+                            buffer[i++] = 0;
                         }
-
                         break;
                     case 'a':  // Read acceleration sensors in a non filtered way, some as ASCII
                         accx=e_get_acc(0);
