@@ -72,10 +72,10 @@ případně ji zpracovat::
     ...
 
 Občas chceme zavolat nějakou funkci v odpovědi na přišlá data. V takovém
-případě není nutnost kontrolovat, zda-li už přišla odpověď až tak elegantní.
-Příkazy ovšem umožňují i nastavit tzv. callback, funkci, která se zavolá po
-získání odpovědi na příkaz a jako parametr dostane data tak, jak by je vrátila
-metoda :meth:`~RequestHandler.get_response`::
+případě není nutnost kontrolovat, zda-li už přišla odpověď, až tak elegantní.
+Příkazy ovšem umožňují i nastavit tzv. callback, funkci, která se zavolá, po
+získání odpovědi na příkaz, sama a jako parametr dostane data tak, jak by je
+vrátila metoda :meth:`~RequestHandler.get_response`::
 
     >>> request = controller.get_speed(callback=fce_zpracujici_odpoved)
 
