@@ -7,7 +7,7 @@ from epuck.controller import Controller
 
 logging.basicConfig(level=logging.WARNING)
 
-c = Controller('/dev/rfcomm2', asynchronous=True, timeout=5, max_tries=1)
+c = Controller('/dev/rfcomm0', asynchronous=True, timeout=5, max_tries=1)
 
 # Signal handler to cleanup after shutdown
 def handle_signal(signum, frame):

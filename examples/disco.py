@@ -21,7 +21,7 @@ class Disco(object):
     """
     def __init__(self):
         logging.basicConfig(level=logging.WARNING)
-        self.c = Controller('/dev/rfcomm2', asynchronous=True)
+        self.c = Controller('/dev/rfcomm0', asynchronous=True)
         self.state_request = None
         # Get first state
         self.state = self.c.get_turning_switch().get_response()

@@ -6,16 +6,16 @@ import time
 import signal
 import sys
 
-from epuck import Controller
+from epuck import Controller, WrongCommand
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.WARNING)
 
-c = Controller('/dev/rfcomm2', asynchronous=True)
+c = Controller('/dev/rfcomm0', asynchronous=True)
 
-# The robot should move even when there are no obstacles
-bias = 100
-# Inputs larger than threshold means there is an obstacle
-threshold = 300
+bias = 200
+too_close = 2000
+max_speed = 1000
+min_speed = -1000
 
 # Signal handler to cleanup after shutdown
 def handle_signal(signum, frame):
@@ -30,19 +30,22 @@ while True:
     # Read values from proximity sensors
     r = c.get_proximity_sensors()
     r = r.get_response()
-    # Compute the speed of wheels based on proximity sensors
-    left_speed = r['L10'] + r['L45'] + r['L90'] + bias
-    right_speed = r['R10'] + r['R45'] + r['R90'] + bias
 
-    # Correct too large values
-    if left_speed > 1000: left_speed = 1000
-    if right_speed > 1000: right_speed = 1000
+    left_sensors = r['L10'] + r['L45'] + r['L90'] + bias
+    right_sensors = r['R10'] + r['R45'] + r['R90'] + bias
 
-    # Fix for obstacles right in front of the robot
-    if (r['L10'] > threshold) and (r['R10'] > threshold):
-        c.set_speed(-right_speed, right_speed)
-    else:
+    left_speed = left_sensors if right_sensors < too_close else -left_sensors
+    right_speed = right_sensors if left_sensors < too_close else -right_sensors
+
+    if left_speed > max_speed: left_speed = max_speed
+    if left_speed < min_speed: left_speed = min_speed
+    if right_speed > max_speed: right_speed = max_speed
+    if right_speed < min_speed: right_speed = min_speed
+
+    try:
         c.set_speed(left_speed, right_speed)
+    except WrongCommand:
+        pass
 
     time.sleep(0.1)
 
