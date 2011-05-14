@@ -312,19 +312,14 @@ int main(void) {
                         if (c1 == '0') {
                             e_ad_scan_off();
                             listening = 0;
+                            buffer[i++] = 0;
+                            buffer[i++] = 0;
                         } else if (c1 == '1') {
-                            e_ad_scan_on();
-                            listening = 1;
-                            e_blink_led6();
-                        }
-                        buffer[i++] = 0;
-                        buffer[i++] = 0;
-                        break;
-                    case 'z':
-                        if (listening) {
-                            while (!e_ad_is_array_filled());
-                            i = 0;
-                            e_blink_led1();
+                            if (listening == 0) {
+                                e_ad_scan_on();
+                                listening = 1;
+                            }
+                            while (!e_ad_is_acquisition_completed());
                             e_ad_scan_off();
                             // Set the mean of the microphone data to zero
                             e_subtract_mean(e_mic_scan[0], FFT_BLOCK_LENGTH, LOG2_BLOCK_LENGTH);
@@ -340,15 +335,10 @@ int main(void) {
                             buffer[i++] = FFT_BLOCK_LENGTH >> 8;
 
                             for (j = 0; j < FFT_BLOCK_LENGTH / 2; j++) {
-                                e_blink_led2();
                                 buffer[i++] = sigCmpx[j].real;
                                 buffer[i++] = sigCmpx[j].imag;
                             }
-                            //e_send_uart1_char(buffer,i); // send answer
-                            //while(e_uart1_sending());
-                        } else {
-                            buffer[i++] = 0;
-                            buffer[i++] = 0;
+
                         }
                         break;
                     case 'a':  // Read acceleration sensors in a non filtered way, some as ASCII

@@ -517,22 +517,22 @@ class Controller(object):
         ret = self.comm.send_command(command, self.command_i, 'u', _parse_response)
         return ret
 
+
     @command
-    def set_microphone(self, on, callback=lambda x: x):
+    def get_microphone(self, on, callback=lambda x: x):
+        """Perform FFT on data from microphones and return the results.
+
+        Arguments:
+            on -- turn recording on/off
+
+        """
+        def _parse_response(response):
+            return [ord(x) for x in response]
         d = {'command': self._binary_command('Z'), 'timestamp': self.command_i,
              'on': '1' if on else '0'}
         command = "%(command)c%(timestamp)c%(on)c\x00" % d
-        ret = self.comm.send_command(command, self.command_i, d['command'])
+        ret = self.comm.send_command(command, self.command_i, d['command'], _parse_response)
         return ret
-
-    @command
-    def get_microphone(self, callback=lambda x: x):
-        d = {'command': self._binary_command('z'), 'timestamp': self.command_i}
-        command = "%(command)c%(timestamp)c\x00" % d
-        ret = self.comm.send_command(command, self.command_i, d['command'])
-        return ret
-
-
 
 
 # Test the module.
