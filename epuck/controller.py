@@ -534,11 +534,3 @@ class Controller(object):
         ret = self.comm.send_command(command, self.command_i, d['command'], _parse_response)
         return ret
 
-
-# Test the module.
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
-
-    a = Controller(None, asynchronous=True, timeout=20, offline=True, offline_address=('localhost',65432))
-    r1 = a.set_motor_speed(100,100)
-    r2 = a.get_motor_speed()
