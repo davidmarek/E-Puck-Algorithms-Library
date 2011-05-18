@@ -12,7 +12,7 @@ E-puck je miniaturní robot vytvořený pro výukové účely na akademické
 úrovni. Vytvořen byl v Ecole Polytechnique Fédérale de Laussanne. Celý
 projekt je založen na konceptu otevřeného hardware, což znamená, že všechny
 dokumenty a schémata jsou dostupná pod svobodnou licencí umožňující
-komukoli využívat e-puck robota na maximum a vyvýjet pro něj ať už
+komukoli využívat e-puck robota na maximum a vyvíjet pro něj ať už
 software, anebo např. hardwarové nádstavby. Vše je dostupné na `stránkách
 výrobce <http://www.e-puck.org>`_.
 

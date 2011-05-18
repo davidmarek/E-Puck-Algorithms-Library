@@ -527,7 +527,7 @@ class Controller(object):
 
         """
         def _parse_response(response):
-            return [ord(x) for x in response]
+            return [ord(x) + ord(y) * 1j for x,y in zip(response[::2], response[1::2])]
         d = {'command': self._binary_command('Z'), 'timestamp': self.command_i,
              'on': '1' if on else '0'}
         command = "%(command)c%(timestamp)c%(on)c\x00" % d

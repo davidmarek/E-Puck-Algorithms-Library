@@ -410,6 +410,22 @@ Třída :class:`Controller`
         :rtype: dict of ints
         :raise: :exc:`~epuck.comm.CommError`
 
+    .. method:: get_microphone(on)
+
+        Získání hodnot z mikrofonu.
+
+        Začne načítání dat z mikrofonu. Tato data pak budou převedena v
+        robotovi pomocí FFT a zaslána do počítače. Jakmile je jednou zapnuto
+        nahrávání, tak každý následující příkaz si už jen vyzvedne připravená
+        data.
+
+        Data jsou vrácena jako seznam komplexních čísel.
+
+        :param on: zapnout / vypnout nahrávání dat z mikrofonu
+        :type on: int
+        :return: seznam dat získaných z FFT
+        :rtype: [complex]
+        :raise: :exc:`~epuck.comm.CommError`
 
 Výjimky
 -------
