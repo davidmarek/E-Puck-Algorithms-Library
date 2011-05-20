@@ -10,10 +10,13 @@ class EPuckError(Exception):
             message -- Description of what went wrong.
 
         """
-        self.message = message
+        if isinstance(message, EPuckError):
+            self.message = message.message
+        else:
+            self.message = message
 
     def __str__(self):
-        return self.message
+        return repr(self.message)
 
 from controller import ControllerError, WrongCommand, Controller
 

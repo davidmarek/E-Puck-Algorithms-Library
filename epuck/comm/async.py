@@ -109,7 +109,7 @@ class AsyncComm(threading.Thread):
             self.serial_connection = serial.Serial(port, **kwargs)
             self.serial_connection.write('\r')
         except serial.SerialException as e:
-            raise CommError("Wasn't able to create a connection.")
+            raise AsyncCommError(e.message)
 
         # Create a pipe used to interrupt the select call.
         self.interrupt_fd_read, self.interrupt_fd_write = os.pipe()

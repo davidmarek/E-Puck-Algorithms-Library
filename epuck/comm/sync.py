@@ -27,7 +27,7 @@ class SyncComm(object):
             self.serial_connection.write('\r')
             self.serial_connection.readline()
         except serial.SerialException as e:
-            raise CommError(e)
+            raise SyncCommError(e.message)
 
         self.logger = logging.getLogger('SyncComm')
 
