@@ -55,7 +55,7 @@ Třída :class:`Controller`
     Při vytváření objektu je možné rozhodnout, zda-li má komunikace probíhat
     synchronně, anebo asynchronně. Tato volba ovlivňuje zda-li se pro
     komunikaci použije třída :class:`~epuck.comm.SyncComm` anebo
-    :class:`~epuck.comm.AsyncComm`. Také na této volbě závisí co budou
+    :class:`~epuck.comm.AsyncComm`. Také na této volbě závisí, co budou
     jednotlivé příkazy vracet. V případě synchronní komunikace půjde rovnou o
     odpověď. V případě asynchronní komunikace vrátí
     :class:`~epuck.comm.RequestHandler`. Z něj se stejné informace
@@ -123,8 +123,7 @@ Třída :class:`Controller`
 
     .. method:: set_leds(on)
 
-        Zapnout nebo vypnout všechny diody naráz, které jsou na obvodu robota
-        naráz.
+        Zapnout nebo vypnout všechny diody, které jsou na obvodu robota, naráz.
 
         :param on: zapnout nebo vypnout diody
         :type on: bool
@@ -146,15 +145,15 @@ Třída :class:`Controller`
 
     .. method:: get_turning_selector()
 
-        Získat pozici otáčivého přepínače.
+        Získat pozici selektoru.
 
-        Otáčivý přepínač je na horní straně robota, jde o malou černou tyčinku,
-        kterou je možné otočit do jedné z 16 pozic. Pozice jsou očíslovány 0 až
-        15. Přepínač je v pozici 0 pokud šipka ukazuje směrem k černé tečce,
-        která je nakreslená na plošném spoji. Pozice jsou číslovány ve směru
+        Selektor je na horní straně robota, jde o malou černou tyčinku, kterou
+        je možné otočit do jedné z 16 pozic. Pozice jsou očíslovány 0 až 15.
+        Selektor je v pozici 0 pokud šipka ukazuje směrem k černé tečce, která
+        je nakreslená na plošném spoji. Pozice jsou číslovány ve směru
         hodinových ručiček.
 
-        :returns: pozice přepínače
+        :returns: pozice selektoru
         :rtype: int
         :raise: :exc:`~epuck.comm.CommError`
 
@@ -169,7 +168,7 @@ Třída :class:`Controller`
 
         Metoda vrací vždy hodnoty všech senzorů. Pro přehlednější zpracování
         jsou uloženy ve slovníku, klíč je vždy znak označující levou (L) nebo
-        pravou (P) stranu a pak uhel v jakém se senzor nachází (senzory vzadu
+        pravou (P) stranu a pak úhel v jakém se senzor nachází (senzory vzadu
         jsou označeny B). Seznam klíčů tedy je ``['R10', 'R45', 'R90', 'RB',
         'LB', 'L90', 'L45', 'L10']``.
 
@@ -188,7 +187,7 @@ Třída :class:`Controller`
 
         Metoda vrací vždy hodnoty všech senzorů. Pro přehlednější zpracování
         jsou uloženy ve slovníku, klíč je vždy znak označující levou (L) nebo
-        pravou (P) stranu a pak uhel v jakém se senzor nachází (senzory vzadu
+        pravou (P) stranu a pak úhel v jakém se senzor nachází (senzory vzadu
         jsou označeny B). Seznam klíčů tedy je ``['R10', 'R45', 'R90', 'RB',
         'LB', 'L90', 'L45', 'L10']``.
 
@@ -209,7 +208,7 @@ Třída :class:`Controller`
         kamera a zrychlí se tak patřičně framerate.
 
         Například pro rozměry 40x40 a zoom 8 robot vezme ze senzorů kamery
-        obdélník velikosti 320x320 a z něj každý 8. pixel.
+        obdélník velikosti 320x320 a z něj každý osmý pixel.
 
         Na parametry jsou kladeny následující požadavky:
             * velikost * zoom nesmí překročit kapacitu kamery.
@@ -220,7 +219,7 @@ Třída :class:`Controller`
         stran týče. Je tedy možné získat i lineární obraz 480x1.
 
         Kamera může fotit v režimu rgb565 anebo v režimu stupňů šedi. Pro každý
-        pixel pak používá buď 16 anebo 8 bitů. V režimu šedi je pak framerate
+        pixel pak používá buď 16, anebo 8 bitů. V režimu šedi je pak framerate
         dvojnásobný.
 
         :param mode: mód kamery, buď :const:`Controller.RGB565_MODE`, anebo
@@ -279,8 +278,8 @@ Třída :class:`Controller`
 
         Nastavení čítačů pro krokové motory.
 
-        U obou krokových motorů je možné aktuálnímu pozici kola přiřadit číslo,
-        to pak bude s každým krokem motoru inkrementováno nebo dekrementováno.
+        U obou krokových motorů je možné aktuální pozici kola přiřadit číslo.
+        To pak bude s každým krokem motoru inkrementováno nebo dekrementováno.
         Pozice se počítají jako 16bitové číslo se znaménkem.
 
         Počet vykonaných kroků je možné zjistit odečtením nastavených hodnot od
@@ -297,7 +296,7 @@ Třída :class:`Controller`
         Získat aktuální hodnotu čítačů krokových motorů.
 
         U obou krokových motorů je možné aktuálnímu pozici kola přiřadit číslo
-        pomocí metody :meth:`set_motor_pos`, to pak bude s každým krokem motoru
+        pomocí metody :meth:`set_motor_pos`. To pak bude s každým krokem motoru
         inkrementováno nebo dekrementováno. Pozice se počítají jako 16bitové
         číslo se znaménkem.
 
@@ -384,9 +383,8 @@ Třída :class:`Controller`
         4. "yaouh"
         5. "wouaaaaaaaah"
 
-        Dle názvů je jasné o jaké zvuky se jedná. Jde o citoslovce ukazující,
-        že autoři mají smysl pro humor. Pokud bude zadáno jiné číslo, tak dojde
-        k vypnutí speakeru. Tím pádem také přestane šum, který zůstane hrát po
+        Jedná se o nahrané výkřiky. Pokud bude zadáno jiné číslo, tak dojde k
+        vypnutí speakeru. Tím pádem také přestane šum, který zůstane hrát po
         přehraném zvuku.
 
         :param sound_no: číslo označující zvuk, který se má přehrát

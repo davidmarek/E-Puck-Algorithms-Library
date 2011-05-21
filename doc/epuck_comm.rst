@@ -7,8 +7,7 @@ Při komunikaci s robotem si uživatel může vybrat mezi synchronní anebo
 asynchronní komunikací. Jeho rozhodnutí při vytváření instance třídy
 :class:`~epuck.Controller` rozhodne o tom, zda-li se pro komunikaci s robotem
 využije třída :class:`~epuck.comm.SyncComm` anebo
-:class:`~epuck.comm.AsyncComm`. Přesný popis těchto tříd je k nalezení v
-programátorské dokumentaci, uživatel je využívá pouze prostřednictvím třídy
+:class:`~epuck.comm.AsyncComm`. Uživatel je využívá pouze prostřednictvím třídy
 :class:`~epuck.Controller`.
 
 Důležité je ovšem vědět jaké výjimky můžou vzniknout při komunikaci s robotem.
@@ -19,8 +18,8 @@ výjimky pro jednotlivé druhy komunikace: :exc:`~epuck.comm.SyncCommError` a
 
 Další důležitý rozdíl mezi sériovou a asynchronní komunikací je ve vrácené
 hodnotě z metod třídy :class:`~epuck.Controller`. Pro synchronní komunikaci
-jsou vrácena přímo odpověď. Pro asynchronní komunikaci je ovšem vrácen pouze
-:class:`~epuck.comm.RequestHandler`, pomocí kterého uživatel může zjistit
+je vrácena přímo odpověď. Pro asynchronní komunikaci je ovšem vrácen pouze
+:class:`~epuck.comm.RequestHandler`, pomocí kterého uživatel může zjistit,
 zda-li už byla přijata odpověď a posléze ji získat.
 
 Příklad komunikace
@@ -35,12 +34,12 @@ Synchronní
     >>> controller.get_speed()
     (0,0)
 
-Důležité je si uvědomit, že při synchronní komunikaci se nebudou provádět další
-příkazy dokud nebude získána odpověď od právě odeslaného. Tedy po zavolání
+Důležité je uvědomit si, že při synchronní komunikaci se nebudou provádět další
+příkazy, dokud nebude získána odpověď na právě odeslaný. Tedy po zavolání
 metody :meth:`~epuck.Controller.get_speed` bude zablokováno vykonávání dalších
-příkazů dokud robot nepošle svou rychlost. Běh programu tedy je přerušován při
+příkazů, dokud robot nepošle svou rychlost. Běh programu tedy je přerušován při
 každém poslání příkazu, navíc se může stát, že robot na příkaz neodpoví a pak
-je třeba čekat než vyprší timeout a postarat se o nové zaslání příkazu.
+je třeba počkat než vyprší timeout a postarat se o nové zaslání příkazu.
 
 Asynchronní
 ^^^^^^^^^^^
@@ -73,8 +72,8 @@ případně ji zpracovat::
 
 Občas chceme zavolat nějakou funkci v odpovědi na přišlá data. V takovém
 případě není nutnost kontrolovat, zda-li už přišla odpověď, až tak elegantní.
-Příkazy ovšem umožňují i nastavit tzv. callback, funkci, která se zavolá, po
-získání odpovědi na příkaz, sama a jako parametr dostane data tak, jak by je
+Příkazy ovšem umožňují i nastavit tzv. callback, funkci, která se zavolá po
+získání odpovědi na příkaz sama a jako parametr dostane data tak, jak by je
 vrátila metoda :meth:`~RequestHandler.get_response`::
 
     >>> request = controller.get_speed(callback=fce_zpracujici_odpoved)
@@ -89,7 +88,7 @@ Odpověd u asynchronní komunikace
     příkazu nezablokovalo vlákno, v kterém byl příkaz poslán. Proto není možné
     čekat na odpověď. Uživatel ovšem nezůstane bez odpovědi. Příkaz mu vrátí
     právě tento handler, pomocí kterého dokáže zjistit, zda-li už odpověď došla
-    a případně i získat onu odpověď.
+    a případně ji i získat.
 
     .. method:: response_received()
 

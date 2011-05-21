@@ -9,12 +9,12 @@ E-puck robot
     :align: right
 
 E-puck je miniaturní robot vytvořený pro výukové účely na akademické
-úrovni. Vytvořen byl v Ecole Polytechnique Fédérale de Laussanne. Celý
-projekt je založen na konceptu otevřeného hardware, což znamená, že všechny
-dokumenty a schémata jsou dostupná pod svobodnou licencí umožňující
-komukoli využívat e-puck robota na maximum a vyvíjet pro něj ať už
-software, anebo např. hardwarové nádstavby. Vše je dostupné na `stránkách
-výrobce <http://www.e-puck.org>`_.
+úrovni. Vytvořen byl v EPFL (Ecole Polytechnique Fédérale de Laussanne) v roce
+2004. Celý projekt je založen na konceptu otevřeného hardware, což znamená, že
+všechny dokumenty a schémata jsou dostupná pod svobodnou licencí umožňující
+komukoli využívat e-puck robota na maximum a vyvíjet pro něj ať už software,
+anebo např. hardwarové nádstavby. Vše je dostupné na `stránkách výrobce
+<http://www.e-puck.org>`_.
 
 E-puck robot byl vytvořen s několika kritérii:
 
@@ -45,9 +45,9 @@ flash paměti. Robot obsahuje následující sensory:
     zrychlení robota. Může být použit pro spoustu experimentů (měření
     náklonu, zrychlení, detekce nárazu, pádu, \ldots).
 
-*   *3 mikrofony* -- více mikrofonů slouží k triangulaci zdroje zvuku,
-    velikost dat získaných z mikrofonů je ovšem na kapacity robota příliš a
-    proto je nutné použít jednotku pro zpracování signálu (DSP).
+*   *3 mikrofony* -- 3 mikrofony slouží k triangulaci zdroje zvuku, velikost
+    dat získaných z mikrofonů je ovšem na kapacity robota příliš a proto je
+    nutné použít jednotku pro zpracování signálu (DSP).
 
 *   *Barevná kamera* -- v přední části robota je kamera s rozlišením
     640x480, bohužel kvůli paměťovým omezením robota je možné získat pouze
