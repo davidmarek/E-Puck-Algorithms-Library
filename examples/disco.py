@@ -9,9 +9,9 @@ from epuck import Controller, WrongCommand
 class Disco(object):
     """Test leds.
 
-    Tests few effects with leds. The effect can be changed with turning switch.
+    Tests few effects with leds. The effect can be changed with turning selector.
 
-    Turning switch values:
+    Turning selector values:
 
         0 -- Two rotating lights.
         1 -- Two rotating light in opposite directions.
@@ -24,7 +24,7 @@ class Disco(object):
         self.c = Controller('/dev/rfcomm0', asynchronous=True)
         self.state_request = None
         # Get first state
-        self.state = self.c.get_turning_switch().get_response()
+        self.state = self.c.get_turning_selector().get_response()
 
     def init_vars(self):
         """Initialize vars used for effects."""
@@ -39,10 +39,10 @@ class Disco(object):
         self.c.set_front_led(0)
 
     def get_state(self):
-        """Get the value of turning switch."""
+        """Get the value of turning selector."""
         # The get_state has been called for the first time
         if self.state_request is None:
-            self.state_request = self.c.get_turning_switch()
+            self.state_request = self.c.get_turning_selector()
         # The response has been received
         elif self.state_request.response_received():
             new_state = self.state_request.get_response()
@@ -50,8 +50,8 @@ class Disco(object):
             if new_state != self.state:
                 self.state = new_state
                 self.init_state()
-            # Check the turning switch
-            self.state_request = self.c.get_turning_switch()
+            # Check the turning selector
+            self.state_request = self.c.get_turning_selector()
 
     def run(self):
         """Do a step in the chosen effect."""

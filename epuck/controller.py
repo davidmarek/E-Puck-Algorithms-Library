@@ -183,8 +183,8 @@ class Controller(object):
 
 
     @command
-    def get_turning_switch(self, callback=lambda x: x):
-        """Get the position of the rotating 16 positions switch.
+    def get_turning_selector(self, callback=lambda x: x):
+        """Get the position of the rotating 16 positions selector.
 
         Position 0 correspond to the arrow pointing on the right when looking
         in the same direction as the robot.

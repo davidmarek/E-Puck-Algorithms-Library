@@ -144,7 +144,7 @@ Třída :class:`Controller`
         :type on: bool
         :raise: :exc:`~epuck.WrongCommand`, :exc:`~epuck.comm.CommError`
 
-    .. method:: get_turning_switch()
+    .. method:: get_turning_selector()
 
         Získat pozici otáčivého přepínače.
 
