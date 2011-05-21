@@ -6,7 +6,8 @@
 Vítejte v dokumentaci E-puck knihovny
 =====================================
 
-E-puck knihovna slouží pro komunikaci s e-puck robotem z pythonu.
+E-puck knihovna slouží pro komunikaci s e-puck robotem z pythonu. Je k nalezení
+na `PyPI <http://pypi.python.org/pypi/epuck/0.9.1>`_.
 
 Cílem je knihovna, která je jednoduchá a intuitivní na použití. Umožňuje rychlé
 prototypování a ovládání robota pomocí synchronní komunikace, ale také
