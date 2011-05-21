@@ -11,6 +11,7 @@ setup(name='epuck',
     author_email='davidm@atrey.karlin.mff.cuni.cz',
     url='http://e-puck.davidmarek.cz/',
     platforms=['POSIX'],
+    download_url='http://atrey.karlin.mff.cuni.cz/~davidm/epuck-1.0.tar.gz',
     license='LGPL',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
