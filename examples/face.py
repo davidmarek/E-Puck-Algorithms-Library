@@ -33,7 +33,7 @@ def show_photo():
     # Get the photo
     img = c.get_photo() \
         .get_response() \
-        .resize((200, 200), Img.ANTIALIAS)
+        .resize((300, 300), Img.ANTIALIAS)
 
     # Convert the photo for OpenCV
     cv_img = cv.CreateImageHeader(img.size, cv.IPL_DEPTH_8U, 1)

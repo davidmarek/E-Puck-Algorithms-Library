@@ -8,8 +8,6 @@ import sys
 
 from epuck import Controller, WrongCommand
 
-logging.basicConfig(level=logging.WARNING)
-
 c = Controller('/dev/rfcomm0', asynchronous=True)
 
 bias = 200
