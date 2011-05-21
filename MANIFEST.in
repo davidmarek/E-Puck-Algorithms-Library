@@ -1,2 +1,4 @@
 include LICENSE
 include examples/*.py
+include firmware/BTcomDM.c firmware/BTcomDM.hex
+include doc/*.rst doc/conf.py doc/Makefile doc/_static/*
