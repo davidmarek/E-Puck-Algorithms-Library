@@ -1,4 +1,4 @@
 include LICENSE
-include examples/*.py
+include examples/*.py examples/haarcascade_frontalface_alt.xml
 include firmware/BTcomDM.c firmware/BTcomDM.hex
 include doc/*.rst doc/conf.py doc/Makefile doc/_static/*

@@ -8,6 +8,7 @@ from ImageTk import PhotoImage
 from epuck import Controller
 
 c = Controller('/dev/rfcomm0', asynchronous=True)
+c.set_camera(Controller.RGB565_MODE, 40, 40, 8)
 
 root = Tk()
 img_camera = Label(root)
