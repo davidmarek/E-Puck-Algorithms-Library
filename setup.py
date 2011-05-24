@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from distutils.core import setup
+from setuptools import setup
 
 setup(name='epuck',
     version='0.9.1',
@@ -13,6 +13,7 @@ setup(name='epuck',
     platforms=['POSIX'],
     download_url='http://atrey.karlin.mff.cuni.cz/~davidm/epuck-0.9.1.tar.gz',
     license='LGPL',
+    install_requires=['pyserial'],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
