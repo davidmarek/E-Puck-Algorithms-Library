@@ -1,6 +1,30 @@
 E-Puck
 ======
 
+Instalace knihovny
+------------------
+
+Knihovna je ke stáhnutí na `stránkách
+projektu <http://atrey.karlin.mff.cuni.cz/~davidm/epuck-0.9.1.tar.gz>`_.
+Podporuje standardní instalaci, takže je možné ji nainstalovat pomocí skriptu
+``setup.py``::
+
+    $ tar -xvf epuck-0.9.1.tar.gz
+    $ cd epuck-0.9.1/
+    $ sudo python setup.py install
+
+Pro instalaci je potřeba mít nainstalován ``python-setuptools``,
+``python-serial``. Pro experimenty s obrázky je třeba ``python-imaging`` a pro
+práci s OpenCV ``python-opencv``:
+
+    $ sudo apt-get install python-setuptools python-serial python-imaging python-opencv
+
+Také je možné ji nainstalovat z webového repositáře `PyPI (Python Package
+Index) <http://pypi.python.org>`_ pomocí programu ``easy_install``::
+
+    $ easy_install epuck
+
+
 Vytvoření spojení s robotem
 ---------------------------
 
@@ -65,25 +89,6 @@ Příklad použití::
 
 Po spuštění příkazu je třeba robota restartovat (modré tlačítko na horní
 straně). Teprve pak se začne nahrávat nový firmware.
-
-Instalace knihovny
-------------------
-
-Knihovna je ke stáhnutí na `stránkách
-projektu <http://atrey.karlin.mff.cuni.cz/~davidm/epuck-0.9.1.tar.gz>`_.
-Podporuje standardní instalaci, takže je možné ji nainstalovat pomocí skriptu
-``setup.py``::
-
-    $ wget http://atrey.karlin.mff.cuni.cz/~davidm/epuck-0.9.1.tar.gz
-    $ tar -xvf epuck-0.9.1.tar.gz
-    $ cd epuck-0.9.1/
-    $ sudo python setup.py install
-
-Také je možné ji nainstalovat z webového repositáře `PyPI (Python Package
-Index) <http://pypi.python.org>`_ pomocí programu ``easy_install``::
-
-    $ easy_install epuck
-
 
 Příklad
 -------
