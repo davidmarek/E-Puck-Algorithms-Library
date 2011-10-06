@@ -1,4 +1,10 @@
 *~
 *.pyc
 .*.swp
-doc/_build/
+.*
+!.gitignore
+_build/
+build/
+dist/
+epuck.egg-info
+*.tmp
