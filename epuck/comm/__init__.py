@@ -16,4 +16,5 @@ class CommError(EPuckError):
 
 from async import RequestHandler, AsyncCommError, AsyncComm
 from sync import SyncCommError, SyncComm
+from socketpair import create_socket_pair
 

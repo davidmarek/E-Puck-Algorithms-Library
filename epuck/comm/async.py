@@ -9,7 +9,7 @@ import serial
 import threading
 import time
 
-from epuck.comm import CommError
+from epuck.comm import CommError, create_socket_pair
 
 
 class AsyncCommError(CommError):
@@ -111,8 +111,8 @@ class AsyncComm(threading.Thread):
         except serial.SerialException as e:
             raise AsyncCommError(e.message)
 
-        # Create a pipe used to interrupt the select call.
-        self.interrupt_fd_read, self.interrupt_fd_write = os.pipe()
+        # Create a socket pair used to interrupt the select call.
+        self.interrupt_fd_read, self.interrupt_fd_write = create_socket_pair()
 
         # Create queues for requests and responses.
         # Stored are only the requests.
@@ -135,7 +135,7 @@ class AsyncComm(threading.Thread):
 
     def stop(self):
         """Stop the main loop."""
-        os.write(self.interrupt_fd_write, "STOP\n")
+        self.interrupt_fd_write.send("STOP\n")
 
     def run(self):
         """The main loop of the communication manager.
@@ -176,7 +176,7 @@ class AsyncComm(threading.Thread):
 
         """
         # Read the command.
-        commands = os.read(self.interrupt_fd_read, 0xffff).strip().split('\n')
+        commands = self.interrupt_fd_read.recv(65536).strip().split('\n')
 
         command_handlers = {
             'NEW': self._write_request,
@@ -311,7 +311,7 @@ class AsyncComm(threading.Thread):
             self.request_queue.put(request, False)
         except Queue.Full:
             raise AsyncCommError("Too many requests.")
-        os.write(self.interrupt_fd_write, "NEW\n")
+        self.interrupt_fd_write.send("NEW\n")
 
 
 # Test the module.
