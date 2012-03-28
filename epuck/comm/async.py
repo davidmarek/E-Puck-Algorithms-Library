@@ -9,7 +9,7 @@ import serial
 import threading
 import time
 
-from epuck.comm import CommError, create_socket_pair
+from epuck.comm import CommError
 
 
 class AsyncCommError(CommError):
@@ -104,15 +104,13 @@ class AsyncComm(threading.Thread):
     def __init__(self, port, timeout=0.5, max_tries=10, **kwargs):
         threading.Thread.__init__(self)
         self.daemon = True
+        self.interrupt = Queue.Queue()
 
         try:
-            self.serial_connection = serial.Serial(port, **kwargs)
+            self.serial_connection = serial.Serial(port, timeout=timeout, **kwargs)
             self.serial_connection.write('\r')
         except serial.SerialException as e:
             raise AsyncCommError(e.message)
-
-        # Create a socket pair used to interrupt the select call.
-        self.interrupt_fd_read, self.interrupt_fd_write = create_socket_pair()
 
         # Create queues for requests and responses.
         # Stored are only the requests.
@@ -135,7 +133,7 @@ class AsyncComm(threading.Thread):
 
     def stop(self):
         """Stop the main loop."""
-        self.interrupt_fd_write.send("STOP\n")
+        self.interrupt.put("STOP")
 
     def run(self):
         """The main loop of the communication manager.
@@ -146,22 +144,15 @@ class AsyncComm(threading.Thread):
         """
         self.logger.debug('Starting main loop.')
 
+        last_check = time.time()
         while self.running:
-            input_sockets = [self.serial_connection, self.interrupt_fd_read]
-            input_sockets, _, _ = select.select(input_sockets, [], [], self.timeout)
-
-            if len(input_sockets) == 0:
-                # Timeout was reached. Check the requests.
+            if self.serial_connection.inWaiting() > 0:
+                self._read_response()
+            if not self.interrupt.empty():
+                self._process_interrupt()
+            if time.time() - last_check > self.timeout:
                 self._check_requests_timeout()
-
-            for i in input_sockets:
-                # The user wants to send a command.
-                if i == self.interrupt_fd_read:
-                    self._process_interrupt()
-
-                # The robot is sending response.
-                elif i == self.serial_connection:
-                    self._read_response()
+                last_check = time.time()
 
     def _stop_main_loop(self):
         """Stop the main loop."""
@@ -175,15 +166,13 @@ class AsyncComm(threading.Thread):
             'STOP' = terminate the main loop
 
         """
-        # Read the command.
-        commands = self.interrupt_fd_read.recv(65536).strip().split('\n')
-
         command_handlers = {
             'NEW': self._write_request,
             'STOP': self._stop_main_loop,
         }
         # Run correct handler.
-        for c in commands:
+        while not self.interrupt.empty():
+            c = self.interrupt.get()
             command_handlers[c]()
 
     def send_command(self, command, timestamp, command_code, callback=lambda x: x):
@@ -217,9 +206,11 @@ class AsyncComm(threading.Thread):
             if ord(code) >= 127:
                 timestamp = ord(self.serial_connection.read(1))
                 response = self._read_binary_data()
+                self.logger.debug('Response: [%s]' % response)
             # Text data
             else:
                 response = self._read_text_data().split(',', 1)
+                self.logger.debug('Response: [%s]' % response)
                 timestamp = ord(response[0][0])
                 try:
                     response = response[1]
@@ -311,7 +302,7 @@ class AsyncComm(threading.Thread):
             self.request_queue.put(request, False)
         except Queue.Full:
             raise AsyncCommError("Too many requests.")
-        self.interrupt_fd_write.send("NEW\n")
+        self.interrupt.put("NEW")
 
 
 # Test the module.
