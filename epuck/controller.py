@@ -221,6 +221,9 @@ class Controller(object):
         def _parse_response(response):
             try:
                 r = map(int, response.split(','))
+                if len(r) != 8:
+                    raise ControllerError("Wrong response")
+
                 return callback(dict(zip(['R10', 'R45', 'R90', 'RB', 'LB', 'L90', 'L45',
                                 'L10'], r)))
             except ValueError as e:
@@ -250,6 +253,9 @@ class Controller(object):
         def _parse_response(response):
             try:
                 r = map(int, response.split(','))
+                if len(r) != 8:
+                    raise ControllerError("Wrong response")
+
                 return callback(dict(zip(['R10', 'R45', 'R90', 'RB', 'LB', 'L90', 'L45',
                                 'L10'], r)))
             except ValueError as e:
